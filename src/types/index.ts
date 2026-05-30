@@ -93,6 +93,7 @@ export interface Note {
   linkedEventId?: string;
   linkedEventTitle?: string;
   sourceType: NoteSourceType;
+  extractedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Sparkles, Eye, Edit3, CheckSquare, X, Loader2 } from "lucide-react";
+import { Sparkles, Eye, Edit3, CheckSquare, X, Loader2, BadgeCheck } from "lucide-react";
 import { marked } from "marked";
+import { format, parseISO } from "date-fns";
 import { useNotesStore } from "../../stores/notes";
 import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
 import { extractFromNote, hasBedrockConfig } from "../../services/claude";
-import { linkNoteTask } from "../../services/notes";
+import { linkNoteTask, markNoteExtracted } from "../../services/notes";
 import { ExtractedNoteData } from "../../types";
 
 export function NoteEditor() {
   const { notes, activeNoteId, update } = useNotesStore();
-  const { add: addTask } = useTaskStore();
+  const { add: addTask, tasks } = useTaskStore();
   const { settings } = useSettingsStore();
 
   const note = notes.find((n) => n.id === activeNoteId) ?? null;
@@ -73,8 +74,23 @@ export function NoteEditor() {
         content,
         note?.sourceType === "transcript"
       );
-      setExtracted(result);
-      setSelectedTasks(new Set(result.tasks.map((_, i) => i)));
+
+      // Filter out tasks already in the task list (case-insensitive title match)
+      const existingTitles = new Set(
+        tasks.map((t) => t.title.toLowerCase().trim())
+      );
+      const dedupedTasks = result.tasks.map((t) => ({
+        ...t,
+        alreadyExists: existingTitles.has(t.title.toLowerCase().trim()),
+      }));
+
+      setExtracted({ ...result, tasks: dedupedTasks });
+      // Pre-select only new tasks
+      setSelectedTasks(new Set(
+        dedupedTasks
+          .map((_, i) => i)
+          .filter((i) => !(dedupedTasks[i] as { alreadyExists?: boolean }).alreadyExists)
+      ));
     } catch (e) {
       console.error("Extraction failed:", e);
     } finally {
@@ -98,6 +114,9 @@ export function NoteEditor() {
       });
       await linkNoteTask(activeNoteId, created.id);
     }
+    // Mark the note as extracted
+    await markNoteExtracted(activeNoteId);
+    update(activeNoteId, { extractedAt: new Date().toISOString() });
     setExtracted(null);
     setSelectedTasks(new Set());
   }
@@ -132,14 +151,19 @@ export function NoteEditor() {
         </div>
         <div className="flex items-center gap-3">
           {saving && <span className="text-xs text-gray-400 dark:text-gray-500">Saving…</span>}
+          {note.extractedAt && (
+            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500" title={`Extracted ${format(parseISO(note.extractedAt), "MMM d 'at' h:mm a")}`}>
+              <BadgeCheck size={13} /> Extracted
+            </span>
+          )}
           {bedrockReady && (
             <button
               onClick={handleExtract}
               disabled={extracting || !content.trim()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 disabled:opacity-40 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 disabled:opacity-40 transition-colors"
             >
               {extracting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-              Extract with AI
+              {note.extractedAt ? "Re-extract" : "Extract with AI"}
             </button>
           )}
         </div>
@@ -203,25 +227,35 @@ export function NoteEditor() {
           {extracted.tasks.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-purple-700">Action items found:</p>
-              {extracted.tasks.map((task, i) => (
-                <label key={i} className="flex items-start gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={selectedTasks.has(i)}
-                    onChange={(e) => {
-                      const next = new Set(selectedTasks);
-                      if (e.target.checked) next.add(i); else next.delete(i);
-                      setSelectedTasks(next);
-                    }}
-                    className="mt-0.5 h-3.5 w-3.5 rounded border-purple-300 text-purple-600"
-                  />
-                  <span className="text-xs text-purple-900 leading-snug">
-                    {task.title}
-                    <span className="ml-1.5 text-purple-400">[{task.priority}]</span>
-                    {task.dueDate && <span className="ml-1 text-purple-400">· due {task.dueDate}</span>}
-                  </span>
-                </label>
-              ))}
+              {extracted.tasks.map((task, i) => {
+                const alreadyExists = (task as typeof task & { alreadyExists?: boolean }).alreadyExists;
+                return (
+                  <label key={i} className={`flex items-start gap-2 ${alreadyExists ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedTasks.has(i)}
+                      disabled={alreadyExists}
+                      onChange={(e) => {
+                        if (alreadyExists) return;
+                        const next = new Set(selectedTasks);
+                        if (e.target.checked) next.add(i); else next.delete(i);
+                        setSelectedTasks(next);
+                      }}
+                      className="mt-0.5 h-3.5 w-3.5 rounded border-purple-300 text-purple-600 disabled:opacity-50"
+                    />
+                    <span className="text-xs leading-snug flex items-center gap-1.5 flex-wrap">
+                      <span className={alreadyExists ? "line-through text-purple-400" : "text-purple-900 dark:text-purple-100"}>
+                        {task.title}
+                      </span>
+                      <span className="text-purple-400">[{task.priority}]</span>
+                      {task.dueDate && <span className="text-purple-400">· due {task.dueDate}</span>}
+                      {alreadyExists && (
+                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">✓ already in tasks</span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
               <button
                 onClick={handleCreateTasks}
                 disabled={selectedTasks.size === 0}

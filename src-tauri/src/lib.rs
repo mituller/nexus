@@ -59,6 +59,12 @@ pub fn run() {
             sql: include_str!("../migrations/003_wiki.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 4,
+            description: "notes extracted_at",
+            sql: include_str!("../migrations/004_notes_extracted.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

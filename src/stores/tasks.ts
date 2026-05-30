@@ -40,6 +40,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   complete: async (id) => {
     await db.updateTask(id, { status: "done" });
-    set({ tasks: get().tasks.filter((t) => t.id !== id) });
+    set({ tasks: get().tasks.map((t) => t.id === id ? { ...t, status: "done" as const } : t) });
   },
 }));

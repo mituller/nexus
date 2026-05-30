@@ -78,6 +78,15 @@ export async function linkNoteTask(noteId: string, taskId: string): Promise<void
   );
 }
 
+export async function markNoteExtracted(noteId: string): Promise<void> {
+  const d = await getDb();
+  const now = new Date().toISOString();
+  await d.execute(
+    "UPDATE notes SET extracted_at = $1, updated_at = $2 WHERE id = $3",
+    [now, now, noteId]
+  );
+}
+
 function rowToNote(row: Record<string, unknown>): Note {
   return {
     id: row.id as string,
@@ -87,6 +96,7 @@ function rowToNote(row: Record<string, unknown>): Note {
     linkedEventId: (row.linked_event_id as string) ?? undefined,
     linkedEventTitle: (row.linked_event_title as string) ?? undefined,
     sourceType: row.source_type as NoteSourceType,
+    extractedAt: (row.extracted_at as string) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

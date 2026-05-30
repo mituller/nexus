@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, FileText, Upload, Mail, Trash2 } from "lucide-react";
+import { Plus, Search, FileText, Upload, Mail, Trash2, BadgeCheck } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNotesStore } from "../../stores/notes";
 
@@ -82,12 +82,17 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
                 )}
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{note.title}</p>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); remove(note.id); }}
-                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all shrink-0"
-              >
-                <Trash2 size={12} />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                {note.extractedAt && (
+                  <span title="Tasks extracted"><BadgeCheck size={12} className="text-green-500" /></span>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); remove(note.id); }}
+                  className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all shrink-0"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate leading-relaxed">
               {note.content.replace(/#+\s/g, "").slice(0, 80) || "Empty"}

@@ -5,39 +5,53 @@ import { Task } from "../../types";
 
 interface TaskFormProps {
   onClose: () => void;
+  task?: Task; // if provided, editing an existing task
 }
 
-export function TaskForm({ onClose }: TaskFormProps) {
-  const { add } = useTaskStore();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<Task["priority"]>("medium");
-  const [dueDate, setDueDate] = useState("");
-  const [tagsInput, setTagsInput] = useState("");
+export function TaskForm({ onClose, task }: TaskFormProps) {
+  const { add, update } = useTaskStore();
+  const [title, setTitle] = useState(task?.title ?? "");
+  const [description, setDescription] = useState(task?.description ?? "");
+  const [priority, setPriority] = useState<Task["priority"]>(task?.priority ?? "medium");
+  const [dueDate, setDueDate] = useState(task?.dueDate ?? "");
+  const [tagsInput, setTagsInput] = useState(task?.tags.join(", ") ?? "");
   const [saving, setSaving] = useState(false);
+
+  const isEditing = !!task;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
     const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
-    await add({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      status: "open",
-      priority,
-      dueDate: dueDate || undefined,
-      tags,
-    });
+
+    if (isEditing) {
+      await update(task.id, {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        dueDate: dueDate || undefined,
+        tags,
+      });
+    } else {
+      await add({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        status: "open",
+        priority,
+        dueDate: dueDate || undefined,
+        tags,
+      });
+    }
     setSaving(false);
     onClose();
   }
 
   return (
-    <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 shadow-sm p-4">
+    <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">New Task</h3>
-        <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500">
+        <h3 className="text-sm font-semibold text-gray-800 dark:bg-gray-100">{isEditing ? "Edit Task" : "New Task"}</h3>
+        <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
           <X size={16} />
         </button>
       </div>
@@ -59,7 +73,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
         />
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Priority</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Priority</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as Task["priority"])}
@@ -71,7 +85,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
             </select>
           </div>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Due date</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Due date</label>
             <input
               type="date"
               value={dueDate}
@@ -80,7 +94,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Tags (comma-sep)</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tags (comma-sep)</label>
             <input
               type="text"
               placeholder="work, meeting"
@@ -94,7 +108,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-500 hover:text-gray-800 dark:text-gray-100"
+            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
           >
             Cancel
           </button>
@@ -103,7 +117,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
             disabled={!title.trim() || saving}
             className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? "Saving…" : "Add task"}
+            {saving ? "Saving…" : isEditing ? "Save" : "Add task"}
           </button>
         </div>
       </form>

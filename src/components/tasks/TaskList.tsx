@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from "react";
-import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitLabStore } from "../../stores/gitlab";
@@ -29,38 +29,32 @@ export function TaskList() {
   const { tasks, complete, remove, update } = useTaskStore();
   const { issues, mrs, connected: gitlabConnected, openIssue } = useGitLabStore();
   const [showForm, setShowForm] = useState(false);
-  const [filter, setFilter] = useState<"open" | "all">("open");
 
-  const visible = useMemo(
-    () => (filter === "open" ? tasks.filter((t) => t.status !== "done") : tasks)
-      .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]),
-    [tasks, filter]
-  );
+  const visible = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      const aDone = a.status === "done" ? 1 : 0;
+      const bDone = b.status === "done" ? 1 : 0;
+      if (aDone !== bDone) return aDone - bDone;
+      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+    });
+  }, [tasks]);
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-8 w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Tasks</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-0.5">
-            {visible.length} {filter === "open" ? "open" : "total"}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            {tasks.filter(t => t.status !== "done").length} open
+            {tasks.filter(t => t.status === "done").length > 0 && (
+              <span className="text-gray-400 dark:text-gray-600"> · {tasks.filter(t => t.status === "done").length} done</span>
+            )}
             {gitlabConnected && issues.length > 0 && (
               <span className="ml-1">· {issues.length} GitLab</span>
             )}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
-            {(["open", "all"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 capitalize transition-colors ${filter === f ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -128,12 +122,17 @@ interface TaskRowProps {
   onUpdate: (id: string, updates: Partial<Task>) => void;
 }
 
-const TaskRow = memo(function TaskRow({ task, onComplete, onDelete }: TaskRowProps) {
+const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate }: TaskRowProps) {
   const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== "done";
   const isDone = task.status === "done";
   const { settings } = useSettingsStore();
   const [creating, setCreating] = useState(false);
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return <TaskForm task={task} onClose={() => setEditing(false)} />;
+  }
 
   async function handleCreateIssue() {
     if (!settings.gitlabToken || !settings.gitlabDefaultProjectId) return;
@@ -159,8 +158,9 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete }: TaskRowPro
       <input
         type="checkbox"
         checked={isDone}
-        onChange={() => onComplete(task.id)}
+        onChange={() => isDone ? onUpdate(task.id, { status: "open" }) : onComplete(task.id)}
         className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+        title={isDone ? "Mark as open" : "Mark as done"}
       />
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium ${isDone ? "line-through text-gray-400 dark:text-gray-500" : isOverdue ? "text-red-700" : "text-gray-800 dark:text-gray-100"}`}>
@@ -176,15 +176,22 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete }: TaskRowPro
           {task.tags.map((tag) => (
             <span key={tag} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-500 rounded text-xs">{tag}</span>
           ))}
-          {task.dueDate && (
-            <span className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
-              Due {format(parseISO(task.dueDate), "MMM d")}
-              {isOverdue && " · overdue"}
-            </span>
-          )}
+          <span className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-500 font-medium" : task.dueDate ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
+            <CalendarDays size={11} />
+            {task.dueDate
+              ? <>Due {format(parseISO(task.dueDate), "MMM d")}{isOverdue && " · overdue"}</>
+              : "No due date"}
+          </span>
         </div>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button
+          onClick={() => setEditing(true)}
+          title="Edit task"
+          className="text-gray-300 hover:text-blue-500 transition-colors"
+        >
+          <Pencil size={13} />
+        </button>
         {settings.gitlabDefaultProjectId && settings.gitlabToken && !createdUrl && (
           <button
             onClick={handleCreateIssue}

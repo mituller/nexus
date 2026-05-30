@@ -13,7 +13,7 @@ async function getDb(): Promise<Database> {
 export async function getTasks(): Promise<Task[]> {
   const d = await getDb();
   const rows = await d.select<Record<string, unknown>[]>(
-    "SELECT * FROM tasks WHERE status != 'done' ORDER BY due_date ASC, created_at DESC"
+    "SELECT * FROM tasks ORDER BY CASE WHEN status='done' THEN 1 ELSE 0 END, due_date ASC, created_at DESC"
   );
   return rows.map(rowToTask);
 }
