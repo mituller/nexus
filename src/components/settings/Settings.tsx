@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Check, Plus, Trash2, GripVertical } from "lucide-react";
 import { useSettingsStore } from "../../stores/settings";
 import { AppSettings, ICalFeed, FEED_COLORS } from "../../types";
+import { getDailyUsage, estimateCost, formatTokens, DailyUsage } from "../../services/tokenUsage";
 
 export function Settings() {
   const { settings, update } = useSettingsStore();
@@ -147,6 +148,7 @@ export function Settings() {
         <Field label="AWS Profile" type="text" placeholder="freshservice-bedrock" {...field("bedrockProfile")} />
         <Field label="AWS Region" type="text" placeholder="us-east-1" {...field("bedrockRegion")} />
         <Field label="Model ID" type="text" placeholder="us.anthropic.claude-sonnet-4-6" {...field("bedrockModelId")} />
+        <TokenUsageDisplay />
       </Section>
 
       {/* Save */}
@@ -271,6 +273,55 @@ function Field({ label, type, placeholder, value, onChange }: FieldProps) {
         onChange={onChange}
         className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
       />
+    </div>
+  );
+}
+
+function TokenUsageDisplay() {
+  const [usage, setUsage] = useState<DailyUsage | null>(null);
+
+  useEffect(() => {
+    getDailyUsage().then(setUsage);
+    // Refresh every 30s while Settings is open
+    const t = setInterval(() => getDailyUsage().then(setUsage), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  if (!usage) return null;
+
+  const cost = estimateCost(usage);
+  const hasUsage = usage.inputTokens > 0 || usage.outputTokens > 0;
+
+  return (
+    <div className="mt-1 pt-3 border-t border-gray-100 dark:border-gray-700">
+      <p className="text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Today's usage</p>
+      {hasUsage ? (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">Input tokens</span>
+            <span className="font-mono text-gray-700 dark:text-gray-300">{formatTokens(usage.inputTokens)}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">Output tokens</span>
+            <span className="font-mono text-gray-700 dark:text-gray-300">{formatTokens(usage.outputTokens)}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">API calls</span>
+            <span className="font-mono text-gray-700 dark:text-gray-300">{usage.callCount}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100 dark:border-gray-700 font-medium">
+            <span className="text-gray-600 dark:text-gray-400">Est. cost</span>
+            <span className="text-gray-900 dark:text-white">
+              {cost < 0.01 ? "<$0.01" : `$${cost.toFixed(3)}`}
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+            Based on ~$3/MTok input · $15/MTok output. Resets at midnight.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-gray-400 dark:text-gray-600">No AI calls made today yet.</p>
+      )}
     </div>
   );
 }
