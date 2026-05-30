@@ -34,10 +34,10 @@ export function TaskForm({ onClose }: TaskFormProps) {
   }
 
   return (
-    <div className="mb-4 bg-white rounded-lg border border-blue-200 shadow-sm p-4">
+    <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800">New Task</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">New Task</h3>
+        <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500">
           <X size={16} />
         </button>
       </div>
@@ -48,22 +48,22 @@ export function TaskForm({ onClose }: TaskFormProps) {
           placeholder="Task title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
         />
         <textarea
           placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
         />
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">Priority</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Priority</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as Task["priority"])}
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
             >
               <option value="high">High</option>
               <option value="medium">Medium</option>
@@ -71,22 +71,22 @@ export function TaskForm({ onClose }: TaskFormProps) {
             </select>
           </div>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">Due date</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Due date</label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">Tags (comma-sep)</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Tags (comma-sep)</label>
             <input
               type="text"
               placeholder="work, meeting"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
             />
           </div>
         </div>
@@ -94,7 +94,7 @@ export function TaskForm({ onClose }: TaskFormProps) {
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-500 hover:text-gray-800 dark:text-gray-100"
           >
             Cancel
           </button>

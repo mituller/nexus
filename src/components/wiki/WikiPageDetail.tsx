@@ -50,7 +50,7 @@ export function WikiPageDetail() {
       const exists = pageTitleSet.has(t.toLowerCase());
       const cls = exists
         ? "wiki-link text-blue-600 hover:text-blue-800 underline underline-offset-2 cursor-pointer font-medium"
-        : "wiki-link text-gray-400 hover:text-gray-600 underline underline-offset-2 cursor-pointer italic";
+        : "wiki-link text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500 underline underline-offset-2 cursor-pointer italic";
       return `<a class="${cls}" data-wiki-title="${encodeURIComponent(t)}" href="#">${t}</a>`;
     });
     return marked.parse(linked) as string;
@@ -77,26 +77,26 @@ export function WikiPageDetail() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white shrink-0">
+      <div className="flex items-center justify-between px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setEditing(false)}
             className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors
-              ${!editing ? "bg-gray-100 text-gray-700" : "text-gray-400 hover:text-gray-600"}`}
+              ${!editing ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500"}`}
           >
             <Eye size={12} /> View
           </button>
           <button
             onClick={() => setEditing(true)}
             className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors
-              ${editing ? "bg-gray-100 text-gray-700" : "text-gray-400 hover:text-gray-600"}`}
+              ${editing ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500"}`}
           >
             <Edit3 size={12} /> Edit
           </button>
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
-            <span className="flex items-center gap-1 text-xs text-gray-400">
+            <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
               <Save size={11} /> Saving…
             </span>
           )}
@@ -107,7 +107,7 @@ export function WikiPageDetail() {
               setEntityType(et);
               scheduleAutoSave(title, content, et);
             }}
-            className="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-xs border border-gray-200 dark:border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
           >
             {ENTITY_TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
@@ -123,18 +123,18 @@ export function WikiPageDetail() {
             type="text"
             value={title}
             onChange={(e) => { setTitle(e.target.value); scheduleAutoSave(e.target.value, content, entityType); }}
-            className="w-full text-2xl font-bold text-gray-900 border-none outline-none bg-transparent"
+            className="w-full text-2xl font-bold text-gray-900 dark:text-white border-none outline-none bg-transparent"
           />
         ) : (
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">{page.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{page.title}</h1>
             <span className={`text-xs px-2 py-0.5 rounded font-medium ${ENTITY_COLORS[page.entityType]}`}>
               {page.entityType}
             </span>
           </div>
         )}
         {page.sourceIds.length > 0 && !editing && (
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
             Compiled from {page.sourceIds.length} note{page.sourceIds.length !== 1 ? "s" : ""}
           </p>
         )}
@@ -147,11 +147,11 @@ export function WikiPageDetail() {
             value={content}
             onChange={(e) => { setContent(e.target.value); scheduleAutoSave(title, e.target.value, entityType); }}
             placeholder="Write wiki page content in Markdown. Use [[Other Page]] to cross-link."
-            className="w-full h-full min-h-64 text-sm text-gray-800 leading-relaxed border-none outline-none resize-none bg-transparent font-mono"
+            className="w-full h-full min-h-64 text-sm text-gray-800 dark:text-gray-100 leading-relaxed border-none outline-none resize-none bg-transparent font-mono"
           />
         ) : (
           <div
-            className="prose prose-sm max-w-none text-gray-800"
+            className="prose prose-sm max-w-none text-gray-800 dark:text-gray-100"
             onClick={handleContentClick}
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />

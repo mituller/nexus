@@ -137,13 +137,13 @@ export function WeekView({ anchor, events, onEventNoteRequest }: WeekViewProps) 
     <>
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* Day headers */}
-      <div className="flex border-b border-gray-200 bg-white shrink-0">
+      <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0">
         <div className="w-14 shrink-0" />
         {days.map((day) => (
-          <div key={day.toISOString()} className="flex-1 text-center py-2 border-l border-gray-100">
-            <p className="text-xs uppercase text-gray-400 font-medium tracking-wide">{format(day, "EEE")}</p>
+          <div key={day.toISOString()} className="flex-1 text-center py-2 border-l border-gray-100 dark:border-gray-700">
+            <p className="text-xs uppercase text-gray-400 dark:text-gray-500 font-medium tracking-wide">{format(day, "EEE")}</p>
             <p className={`text-sm font-semibold mt-0.5 w-7 h-7 flex items-center justify-center mx-auto rounded-full
-              ${isToday(day) ? "bg-blue-600 text-white" : "text-gray-700"}`}>
+              ${isToday(day) ? "bg-blue-600 text-white" : "text-gray-700 dark:text-gray-300"}`}>
               {format(day, "d")}
             </p>
           </div>
@@ -161,7 +161,7 @@ export function WeekView({ anchor, events, onEventNoteRequest }: WeekViewProps) 
                 className="absolute w-full text-right pr-2"
                 style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT - 9}px` }}
               >
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-gray-500">
                   {hour === 12 ? "12 PM" : hour < 12 ? `${hour} AM` : `${hour - 12} PM`}
                 </span>
               </div>
@@ -174,12 +174,12 @@ export function WeekView({ anchor, events, onEventNoteRequest }: WeekViewProps) 
             const positioned = layoutDayEvents(dayEvents);
 
             return (
-              <div key={day.toISOString()} className="flex-1 border-l border-gray-100 relative">
+              <div key={day.toISOString()} className="flex-1 border-l border-gray-100 dark:border-gray-700 relative">
                 {/* Hour lines */}
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="absolute w-full border-t border-gray-100"
+                    className="absolute w-full border-t border-gray-100 dark:border-gray-700"
                     style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT}px` }}
                   />
                 ))}

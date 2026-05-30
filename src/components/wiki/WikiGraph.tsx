@@ -129,7 +129,7 @@ export function WikiGraph() {
 
   if (pages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400">
+      <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
         <p className="text-sm">No wiki pages yet — ingest some notes first.</p>
       </div>
     );
@@ -187,9 +187,9 @@ export function WikiGraph() {
       </svg>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 bg-white/90 dark:bg-gray-800/90 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+      <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 bg-white dark:bg-gray-800/90 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
         {(Object.entries(ENTITY_COLORS) as [WikiEntityType, string][]).map(([type, color]) => (
-          <span key={type} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+          <span key={type} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-500 dark:text-gray-300">
             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
             {type}
           </span>

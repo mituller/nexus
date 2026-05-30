@@ -19,8 +19,8 @@ const typeConfig: Record<HeadsUpItem["type"], { icon: React.ReactNode; bg: strin
     bg: "bg-green-50", border: "border-green-200", text: "text-green-900",
   },
   info: {
-    icon: <AlertTriangle size={14} className="text-gray-500 shrink-0 mt-0.5" />,
-    bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-700",
+    icon: <AlertTriangle size={14} className="text-gray-500 dark:text-gray-500 shrink-0 mt-0.5" />,
+    bg: "bg-gray-50 dark:bg-gray-900", border: "border-gray-200 dark:border-gray-700", text: "text-gray-700 dark:text-gray-300",
   },
 };
 
@@ -31,7 +31,7 @@ interface HeadsUpSectionProps {
 export function HeadsUpSection({ items }: HeadsUpSectionProps) {
   return (
     <section>
-      <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+      <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
         <AlertTriangle size={12} />
         Heads Up
       </h2>

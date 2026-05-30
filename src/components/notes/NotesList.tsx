@@ -27,7 +27,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
   }
 
   return (
-    <div className="flex flex-col h-full border-r border-gray-200 bg-white">
+    <div className="flex flex-col h-full border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       {/* Header */}
       <div className="px-3 pt-4 pb-2 space-y-2">
         <div className="flex items-center gap-1.5">
@@ -40,19 +40,19 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
           <button
             onClick={onImportTranscript}
             title="Import transcript"
-            className="p-1.5 border border-gray-200 rounded-md text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+            className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-md text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:text-gray-300 transition-colors"
           >
             <Mic size={15} />
           </button>
         </div>
         <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search notes…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
           />
         </div>
       </div>
@@ -60,7 +60,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-8">
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-8">
             {search ? "No matching notes." : "No notes yet."}
           </p>
         )}
@@ -68,17 +68,17 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
           <button
             key={note.id}
             onClick={() => setActive(note.id)}
-            className={`group w-full text-left px-3 py-3 border-b border-gray-100 transition-colors
-              ${activeNoteId === note.id ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-gray-50"}`}
+            className={`group w-full text-left px-3 py-3 border-b border-gray-100 dark:border-gray-700 transition-colors
+              ${activeNoteId === note.id ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
           >
             <div className="flex items-start justify-between gap-1">
               <div className="flex items-center gap-1.5 min-w-0">
                 {note.sourceType === "transcript" ? (
                   <Mic size={12} className="text-purple-500 shrink-0" />
                 ) : (
-                  <FileText size={12} className="text-gray-400 shrink-0" />
+                  <FileText size={12} className="text-gray-400 dark:text-gray-500 shrink-0" />
                 )}
-                <p className="text-sm font-medium text-gray-800 truncate">{note.title}</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{note.title}</p>
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); remove(note.id); }}
@@ -87,7 +87,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
                 <Trash2 size={12} />
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5 truncate leading-relaxed">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate leading-relaxed">
               {note.content.replace(/#+\s/g, "").slice(0, 80) || "Empty"}
             </p>
             <div className="flex items-center gap-2 mt-1">
@@ -95,7 +95,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
                 {format(parseISO(note.updatedAt), "MMM d")}
               </span>
               {note.tags.slice(0, 2).map((t) => (
-                <span key={t} className="text-xs bg-gray-100 text-gray-500 px-1.5 rounded">{t}</span>
+                <span key={t} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-500 px-1.5 rounded">{t}</span>
               ))}
               {note.linkedEventTitle && (
                 <span className="text-xs text-blue-400 truncate">· {note.linkedEventTitle}</span>

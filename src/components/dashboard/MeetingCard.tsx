@@ -18,11 +18,11 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
     .slice(0, 4);
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 pl-4 pr-4 py-3 flex gap-3 ${isPast ? "opacity-50" : ""}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 pl-4 pr-4 py-3 flex gap-3 ${isPast ? "opacity-50" : ""}`}>
       <div className="w-1 rounded-full shrink-0 self-stretch" style={{ backgroundColor: event.color }} />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-medium text-gray-900 text-sm leading-snug">{event.title}</p>
+          <p className="font-medium text-gray-900 dark:text-white text-sm leading-snug">{event.title}</p>
           {event.teamsLink && (
             <button
               onClick={() => openUrl(event.teamsLink!)}
@@ -32,7 +32,7 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
             </button>
           )}
         </div>
-        <p className={`text-xs mt-0.5 ${isPast ? "text-gray-400" : "text-gray-500"}`}>
+        <p className={`text-xs mt-0.5 ${isPast ? "text-gray-400 dark:text-gray-500" : "text-gray-500 dark:text-gray-500"}`}>
           {format(start, "h:mm a")}–{format(end, "h:mm a")}
           {isPast && " · may have passed"}
           {event.feedLabel && (
@@ -47,7 +47,7 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
           {event.isTentative && <Badge color="orange">tentative</Badge>}
         </div>
         {(otherAttendees.length > 0 || event.bodyPreview) && (
-          <p className="text-xs text-gray-400 mt-1 truncate">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
             {otherAttendees.map((a) => a.name.split(" ")[0].toLowerCase()).join(", ")}
             {event.bodyPreview ? " — " + event.bodyPreview.slice(0, 60) : ""}
           </p>
@@ -68,7 +68,7 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
 function Badge({ color, children }: { color: "blue" | "gray" | "orange"; children: React.ReactNode }) {
   const classes = {
     blue: "bg-blue-100 text-blue-700",
-    gray: "bg-gray-100 text-gray-600",
+    gray: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-500",
     orange: "bg-orange-100 text-orange-700",
   };
   return (

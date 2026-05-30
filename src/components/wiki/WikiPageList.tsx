@@ -18,7 +18,7 @@ const ENTITY_COLORS: Record<WikiEntityType, string> = {
   decision: "bg-orange-100 text-orange-700",
   meeting: "bg-purple-100 text-purple-700",
   concept: "bg-teal-100 text-teal-700",
-  general: "bg-gray-100 text-gray-600",
+  general: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-500",
 };
 
 interface WikiPageListProps {
@@ -42,7 +42,7 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
   }, {} as Record<WikiEntityType, WikiPage[]>);
 
   return (
-    <div className="flex flex-col h-full border-r border-gray-200 bg-white">
+    <div className="flex flex-col h-full border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <div className="px-3 pt-4 pb-2 space-y-2">
         <div className="flex items-center gap-1.5">
           <button
@@ -53,20 +53,20 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
           </button>
         </div>
         <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search wiki…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
           />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-4">
         {filtered.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-8">
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-8">
             {search ? "No matching pages." : "No wiki pages yet. Use Ingest to generate them from your notes."}
           </p>
         )}
@@ -77,7 +77,7 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
           return (
             <div key={type} className="mb-1">
               <div className="px-3 py-1.5 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   {ENTITY_LABELS[type]}
                 </span>
                 <span className="text-xs text-gray-300">{group.length}</span>
@@ -113,10 +113,10 @@ function PageRow({ page, active, colorClass, onClick, onDelete }: PageRowProps) 
     <button
       onClick={onClick}
       className={`group w-full text-left px-3 py-2 border-b border-gray-50 transition-colors
-        ${active ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-gray-50"}`}
+        ${active ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
     >
       <div className="flex items-center justify-between gap-1">
-        <p className="text-sm text-gray-800 truncate flex-1">{page.title}</p>
+        <p className="text-sm text-gray-800 dark:text-gray-100 truncate flex-1">{page.title}</p>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all shrink-0"

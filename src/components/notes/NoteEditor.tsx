@@ -104,7 +104,7 @@ export function NoteEditor() {
 
   if (!note) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400">
+      <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
         <p className="text-sm">Select a note or create one.</p>
       </div>
     );
@@ -115,23 +115,23 @@ export function NoteEditor() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setPreview(false)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${!preview ? "bg-gray-100 text-gray-700" : "text-gray-400 hover:text-gray-600"}`}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${!preview ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500"}`}
           >
             <Edit3 size={12} /> Edit
           </button>
           <button
             onClick={() => setPreview(true)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${preview ? "bg-gray-100 text-gray-700" : "text-gray-400 hover:text-gray-600"}`}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${preview ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500"}`}
           >
             <Eye size={12} /> Preview
           </button>
         </div>
         <div className="flex items-center gap-3">
-          {saving && <span className="text-xs text-gray-400">Saving…</span>}
+          {saving && <span className="text-xs text-gray-400 dark:text-gray-500">Saving…</span>}
           {bedrockReady && (
             <button
               onClick={handleExtract}
@@ -152,7 +152,7 @@ export function NoteEditor() {
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Note title"
-          className="w-full text-xl font-bold text-gray-900 border-none outline-none placeholder-gray-300 bg-transparent"
+          className="w-full text-xl font-bold text-gray-900 dark:text-white border-none outline-none placeholder-gray-300 dark:placeholder-gray-600 bg-transparent"
         />
       </div>
 
@@ -163,7 +163,7 @@ export function NoteEditor() {
           value={tagsInput}
           onChange={(e) => handleTagsChange(e.target.value)}
           placeholder="Tags (comma-separated)"
-          className="text-xs text-gray-400 border-none outline-none placeholder-gray-300 bg-transparent w-full"
+          className="text-xs text-gray-400 dark:text-gray-500 border-none outline-none placeholder-gray-300 dark:placeholder-gray-600 bg-transparent w-full"
         />
       </div>
 
@@ -171,7 +171,7 @@ export function NoteEditor() {
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         {preview ? (
           <div
-            className="prose prose-sm max-w-none text-gray-800"
+            className="prose prose-sm max-w-none text-gray-800 dark:text-gray-100"
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />
         ) : (
@@ -179,14 +179,14 @@ export function NoteEditor() {
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             placeholder="Start writing… (Markdown supported)"
-            className="w-full h-full min-h-64 text-sm text-gray-800 leading-relaxed border-none outline-none resize-none bg-transparent placeholder-gray-300 font-mono"
+            className="w-full h-full min-h-64 text-sm text-gray-800 dark:text-gray-100 leading-relaxed border-none outline-none resize-none bg-transparent placeholder-gray-300 dark:placeholder-gray-600 font-mono"
           />
         )}
       </div>
 
       {/* AI Extraction panel */}
       {extracted && (
-        <div className="shrink-0 border-t border-gray-200 bg-purple-50 p-4 space-y-3">
+        <div className="shrink-0 border-t border-gray-200 dark:border-gray-700 bg-purple-50 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1.5">
               <Sparkles size={14} /> AI Extraction

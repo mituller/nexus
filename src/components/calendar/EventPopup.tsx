@@ -29,7 +29,7 @@ export function EventPopup({ event, anchorRect, onClose, onAddNotes }: EventPopu
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
-        className="fixed z-50 bg-white rounded-xl shadow-xl border border-gray-200 w-70 overflow-hidden"
+        className="fixed z-50 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-70 overflow-hidden"
         style={{ left, top, width: popupWidth }}
       >
         {/* Color bar */}
@@ -38,14 +38,14 @@ export function EventPopup({ event, anchorRect, onClose, onAddNotes }: EventPopu
         <div className="p-4 space-y-3">
           {/* Title + close */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-gray-900 text-sm leading-snug flex-1">{event.title}</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 shrink-0">
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-snug flex-1">{event.title}</h3>
+            <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500 shrink-0">
               <X size={14} />
             </button>
           </div>
 
           {/* Time */}
-          <div className="flex items-center gap-2 text-xs text-gray-600">
+          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-500">
             <Clock size={12} className="shrink-0" />
             <span>{format(start, "h:mm a")} – {format(end, "h:mm a")} · {durationStr}</span>
           </div>
@@ -53,14 +53,14 @@ export function EventPopup({ event, anchorRect, onClose, onAddNotes }: EventPopu
           {/* Calendar feed */}
           <div className="flex items-center gap-2 text-xs">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: event.color }} />
-            <span className="text-gray-500">{event.feedLabel}</span>
+            <span className="text-gray-500 dark:text-gray-500">{event.feedLabel}</span>
             {event.isOrganizer && <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">organizer</span>}
             {event.isTentative && <span className="px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded text-xs">tentative</span>}
           </div>
 
           {/* Attendees */}
           {event.attendees.length > 0 && (
-            <div className="flex items-start gap-2 text-xs text-gray-600">
+            <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-500">
               <Users size={12} className="shrink-0 mt-0.5" />
               <span className="line-clamp-2">
                 {event.attendees.map((a) => a.name).join(", ")}
@@ -70,14 +70,14 @@ export function EventPopup({ event, anchorRect, onClose, onAddNotes }: EventPopu
 
           {/* Location */}
           {event.location && (
-            <p className="text-xs text-gray-500 truncate">{event.location}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 truncate">{event.location}</p>
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-1 border-t border-gray-100">
+          <div className="flex gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={() => { onAddNotes(event); onClose(); }}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <FileText size={12} /> Meeting notes
             </button>

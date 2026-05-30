@@ -52,11 +52,11 @@ export function QuickCapture({ onClose, onNavigate }: QuickCaptureProps) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-start justify-center pt-32 z-50 px-4" onClick={onClose}>
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mode tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
           {([["task", "Task", <CheckSquare size={13} />], ["note", "Note", <FileText size={13} />]] as const).map(([m, label, icon]) => (
             <button
               key={m}
@@ -64,13 +64,13 @@ export function QuickCapture({ onClose, onNavigate }: QuickCaptureProps) {
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                 mode === m
                   ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  : "border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300"
               }`}
             >
               {icon}{label}
             </button>
           ))}
-          <button onClick={onClose} className="ml-auto px-4 text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="ml-auto px-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500">
             <X size={15} />
           </button>
         </div>
@@ -82,12 +82,12 @@ export function QuickCapture({ onClose, onNavigate }: QuickCaptureProps) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={mode === "task" ? "What needs to be done?" : "Note title…"}
-            className="w-full text-base border-none outline-none placeholder-gray-300 text-gray-900"
+            className="w-full text-base border-none outline-none placeholder-gray-300 dark:placeholder-gray-600 text-gray-900 dark:text-white"
           />
 
           {mode === "task" && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Priority:</span>
+              <span className="text-xs text-gray-500 dark:text-gray-500">Priority:</span>
               {(["high", "medium", "low"] as const).map((p) => (
                 <button
                   key={p}
@@ -95,8 +95,8 @@ export function QuickCapture({ onClose, onNavigate }: QuickCaptureProps) {
                   onClick={() => setPriority(p)}
                   className={`px-2 py-0.5 rounded text-xs capitalize transition-colors ${
                     priority === p
-                      ? p === "high" ? "bg-red-100 text-red-700" : p === "medium" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"
-                      : "text-gray-400 hover:text-gray-600"
+                      ? p === "high" ? "bg-red-100 text-red-700" : p === "medium" ? "bg-orange-100 text-orange-700" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-500"
+                      : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500"
                   }`}
                 >
                   {p}
@@ -106,7 +106,7 @@ export function QuickCapture({ onClose, onNavigate }: QuickCaptureProps) {
           )}
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-gray-400">⏎ to save · esc to cancel</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">⏎ to save · esc to cancel</span>
             <button
               type="submit"
               disabled={!text.trim() || saving}

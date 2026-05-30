@@ -5,7 +5,7 @@ interface ComingSoonProps {
 
 export function ComingSoon({ name, phase }: ComingSoonProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+    <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
       <p className="text-2xl font-semibold text-gray-300">{name}</p>
       <p className="mt-2 text-sm">Coming in Phase {phase}</p>
     </div>

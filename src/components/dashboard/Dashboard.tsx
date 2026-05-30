@@ -55,11 +55,11 @@ export function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{greeting}, {name}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{greeting}, {name}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-0.5">
             {format(now, "EEEE, MMMM d")} · {format(now, "h:mm a")}
             {lastFetched && (
-              <span className="ml-2 text-gray-400">
+              <span className="ml-2 text-gray-400 dark:text-gray-500">
                 · Calendar updated {format(lastFetched, "h:mm a")}
               </span>
             )}
@@ -69,7 +69,7 @@ export function Dashboard() {
         <button
           onClick={handleRefresh}
           disabled={loadingEvents || loadingBriefing}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-40 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 disabled:opacity-40 transition-colors"
         >
           <RefreshCw size={14} className={(loadingEvents || loadingBriefing) ? "animate-spin" : ""} />
           Refresh
@@ -85,9 +85,9 @@ export function Dashboard() {
       {/* Loading skeleton while events fetch */}
       {loadingEvents && (
         <div className="space-y-2 animate-pulse">
-          <div className="h-20 bg-gray-100 rounded-lg" />
-          <div className="h-14 bg-gray-100 rounded-lg" />
-          <div className="h-14 bg-gray-100 rounded-lg" />
+          <div className="h-20 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+          <div className="h-14 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+          <div className="h-14 bg-gray-100 dark:bg-gray-700 rounded-lg" />
         </div>
       )}
 
@@ -135,12 +135,12 @@ export function Dashboard() {
 
           {/* Narrative */}
           {briefing?.narrative && (
-            <section className="border-t border-gray-200 pt-5">
-              <p className="text-sm font-medium text-gray-700 mb-2">A few things worth calling out:</p>
-              <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+            <section className="border-t border-gray-200 dark:border-gray-700 pt-5">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">A few things worth calling out:</p>
+              <div className="text-sm text-gray-600 dark:text-gray-500 leading-relaxed whitespace-pre-line">
                 {briefing.narrative}
               </div>
-              <p className="mt-3 text-xs text-gray-400">
+              <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
                 Generated {format(new Date(briefing.generatedAt), "h:mm a")}
                 {loadingBriefing && " · Refreshing…"}
               </p>
@@ -148,7 +148,7 @@ export function Dashboard() {
           )}
 
           {loadingBriefing && !briefing && (
-            <p className="text-sm text-gray-400 animate-pulse">Generating your briefing…</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">Generating your briefing…</p>
           )}
         </div>
 
@@ -160,7 +160,7 @@ export function Dashboard() {
               <SectionHeader icon={<CheckSquare size={13} />}>
                 Open Tasks
               </SectionHeader>
-              <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden bg-white">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
                 {openTasks.slice(0, 8).map((t) => <DashboardTaskItem key={t.id} task={t} />)}
               </div>
             </section>
@@ -175,7 +175,7 @@ export function Dashboard() {
 
 function SectionHeader({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+    <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
       {icon}
       {children}
     </h2>

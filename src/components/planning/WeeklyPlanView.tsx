@@ -85,8 +85,8 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Week Ahead</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Week Ahead</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-0.5">
             {format(days[0], "MMM d")} – {format(days[days.length - 1], "MMM d, yyyy")}
           </p>
         </div>
@@ -104,7 +104,7 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
           <button
             onClick={loadWeek}
             disabled={loading}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-40"
+            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 disabled:opacity-40"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Refresh
@@ -114,7 +114,7 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
 
       {/* AI narrative */}
       {narrative && (
-        <div className="bg-purple-50 border border-purple-100 rounded-lg px-5 py-4 text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+        <div className="bg-purple-50 border border-purple-100 rounded-lg px-5 py-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
           {narrative}
         </div>
       )}
@@ -122,10 +122,10 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
       <div className="grid grid-cols-5 gap-6 items-start">
         {/* Left: calendar days */}
         <div className="col-span-3 space-y-5">
-          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500">
             <Calendar size={13} /> Calendar
           </h2>
-          {loading && <p className="text-sm text-gray-400 animate-pulse">Loading…</p>}
+          {loading && <p className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">Loading…</p>}
           {days.map((day) => {
             const str = format(day, "yyyy-MM-dd");
             const dayEvents = weekEvents
@@ -133,7 +133,7 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
               .sort((a, b) => a.start.localeCompare(b.start));
             return (
               <div key={str}>
-                <p className="text-xs font-semibold text-gray-500 mb-2">{format(day, "EEEE, MMM d")}</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-500 mb-2">{format(day, "EEEE, MMM d")}</p>
                 {dayEvents.length === 0 ? (
                   <p className="text-xs text-gray-300 pl-2">No events</p>
                 ) : (
@@ -150,16 +150,16 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
         <div className="col-span-2 space-y-6">
           {thisWeekTasks.length > 0 && (
             <section>
-              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
                 <CheckSquare size={13} /> Due This Week ({thisWeekTasks.length})
               </h2>
               <div className="space-y-1">
                 {thisWeekTasks.map((t) => (
-                  <div key={t.id} className="flex items-start gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm">
+                  <div key={t.id} className="flex items-start gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm">
                     <span className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${t.priority === "high" ? "bg-red-400" : t.priority === "medium" ? "bg-orange-400" : "bg-gray-300"}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 truncate">{t.title}</p>
-                      {t.dueDate && <p className="text-xs text-gray-400">Due {format(parseISO(t.dueDate), "EEE MMM d")}</p>}
+                      <p className="text-gray-800 dark:text-gray-100 truncate">{t.title}</p>
+                      {t.dueDate && <p className="text-xs text-gray-400 dark:text-gray-500">Due {format(parseISO(t.dueDate), "EEE MMM d")}</p>}
                     </div>
                   </div>
                 ))}
@@ -169,17 +169,17 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
 
           {(issues.length > 0 || mrs.length > 0) && (
             <section>
-              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
                 <GitBranch size={13} /> GitLab
               </h2>
               <div className="space-y-1 text-sm">
-                <div className="flex justify-between px-3 py-2 bg-white rounded-lg border border-gray-200">
-                  <span className="text-gray-600">Open issues</span>
-                  <span className="font-semibold text-gray-900">{issues.length}</span>
+                <div className="flex justify-between px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-500">Open issues</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{issues.length}</span>
                 </div>
-                <div className="flex justify-between px-3 py-2 bg-white rounded-lg border border-gray-200">
-                  <span className="text-gray-600">Open MRs</span>
-                  <span className="font-semibold text-gray-900">{mrs.length}</span>
+                <div className="flex justify-between px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-500">Open MRs</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{mrs.length}</span>
                 </div>
               </div>
             </section>

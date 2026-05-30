@@ -141,11 +141,11 @@ export function WikiView() {
       {/* Right: detail + toolbar */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Wiki toolbar */}
-        <div className="flex items-center gap-2 px-5 py-2.5 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center gap-2 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0">
           <button
             onClick={() => setGraphView((v) => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors
-              ${graphView ? "bg-gray-700 text-white border-gray-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+              ${graphView ? "bg-gray-700 text-white border-gray-700" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
           >
             <Network size={12} /> {graphView ? "Pages" : "Graph"}
           </button>
@@ -155,14 +155,14 @@ export function WikiView() {
               <button
                 onClick={() => { setPanel(panel === "query" ? "none" : "query"); setQueryAnswer(null); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors
-                  ${panel === "query" ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                  ${panel === "query" ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
               >
                 <Search size={12} /> Query
               </button>
               <button
                 onClick={() => { setPanel(panel === "ingest" ? "none" : "ingest"); if (panel !== "ingest") handleIngest(); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors
-                  ${panel === "ingest" ? "bg-purple-600 text-white border-purple-600" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                  ${panel === "ingest" ? "bg-purple-600 text-white border-purple-600" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
               >
                 <Sparkles size={12} /> Ingest
                 {totalUnprocessed > 0 && panel !== "ingest" && (
@@ -174,7 +174,7 @@ export function WikiView() {
               <button
                 onClick={() => { setPanel(panel === "lint" ? "none" : "lint"); if (panel !== "lint") handleLint(); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors
-                  ${panel === "lint" ? "bg-orange-500 text-white border-orange-500" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                  ${panel === "lint" ? "bg-orange-500 text-white border-orange-500" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
               >
                 <AlertTriangle size={12} /> Lint
               </button>
@@ -184,7 +184,7 @@ export function WikiView() {
 
         {/* Panel: Query */}
         {panel === "query" && (
-          <div className="shrink-0 border-b border-gray-200 bg-blue-50 px-5 py-4 space-y-3">
+          <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-blue-50 px-5 py-4 space-y-3">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -192,7 +192,7 @@ export function WikiView() {
                 onChange={(e) => setQueryText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleQuery()}
                 placeholder="Ask anything about your wiki… (Enter to search)"
-                className="flex-1 px-3 py-2 text-sm border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="flex-1 px-3 py-2 text-sm border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
                 autoFocus
               />
               <button
@@ -202,13 +202,13 @@ export function WikiView() {
               >
                 {queryLoading ? <Loader2 size={14} className="animate-spin" /> : "Ask"}
               </button>
-              <button onClick={() => setPanel("none")} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setPanel("none")} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500">
                 <X size={16} />
               </button>
             </div>
             {queryAnswer && (
-              <div className="bg-white rounded-lg border border-blue-200 p-4 space-y-2">
-                <p className="text-sm text-gray-800 leading-relaxed">{queryAnswer.answer}</p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-blue-200 p-4 space-y-2">
+                <p className="text-sm text-gray-800 dark:text-gray-100 leading-relaxed">{queryAnswer.answer}</p>
                 {queryAnswer.citations.length > 0 && (
                   <div className="flex flex-wrap gap-1 pt-1">
                     {queryAnswer.citations.map((c) => (
@@ -223,7 +223,7 @@ export function WikiView() {
 
         {/* Panel: Ingest progress */}
         {panel === "ingest" && ingestProgress && (
-          <div className="shrink-0 border-b border-gray-200 bg-purple-50 px-5 py-4 space-y-3">
+          <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-purple-50 px-5 py-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1.5">
                 <Sparkles size={14} /> Ingesting notes into wiki…
@@ -276,7 +276,7 @@ export function WikiView() {
 
         {/* Panel: Lint results */}
         {panel === "lint" && (
-          <div className="shrink-0 border-b border-gray-200 bg-orange-50 px-5 py-4 space-y-3">
+          <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-orange-50 px-5 py-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-orange-900 flex items-center gap-1.5">
                 <AlertTriangle size={14} /> Wiki Health Check
@@ -314,14 +314,14 @@ function LintGroup({ title, items, color }: { title: string; items: string[]; co
   if (items.length === 0) return (
     <div>
       <p className={`font-medium ${color} mb-1`}>{title}</p>
-      <p className="text-gray-400">None ✓</p>
+      <p className="text-gray-400 dark:text-gray-500">None ✓</p>
     </div>
   );
   return (
     <div>
       <p className={`font-medium ${color} mb-1`}>{title} ({items.length})</p>
       {items.slice(0, 4).map((i) => <p key={i} className={`${color} truncate`}>· {i}</p>)}
-      {items.length > 4 && <p className="text-gray-400">+{items.length - 4} more</p>}
+      {items.length > 4 && <p className="text-gray-400 dark:text-gray-500">+{items.length - 4} more</p>}
     </div>
   );
 }

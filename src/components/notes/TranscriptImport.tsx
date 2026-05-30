@@ -59,19 +59,19 @@ export function TranscriptImport({ onClose }: TranscriptImportProps) {
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900 text-sm">Import Transcript</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Import Transcript</h2>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500">
             <X size={16} />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-500">
             Supports <strong>.vtt</strong> (Teams/Zoom WebVTT), <strong>.txt</strong> plain text, and other text files.
             After import, use <strong>Extract with AI</strong> to pull out action items and tasks.
           </p>
@@ -84,11 +84,11 @@ export function TranscriptImport({ onClose }: TranscriptImportProps) {
               onDrop={handleDrop}
               onClick={() => inputRef.current?.click()}
               className={`border-2 border-dashed rounded-lg py-10 flex flex-col items-center gap-2 cursor-pointer transition-colors
-                ${dragOver ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}
+                ${dragOver ? "border-blue-400 bg-blue-50" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
             >
               <Upload size={24} className="text-gray-300" />
-              <p className="text-sm text-gray-500">Drop file here or click to browse</p>
-              <p className="text-xs text-gray-400">.vtt · .txt · .text</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">Drop file here or click to browse</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">.vtt · .txt · .text</p>
               <input
                 ref={inputRef}
                 type="file"
@@ -98,35 +98,35 @@ export function TranscriptImport({ onClose }: TranscriptImportProps) {
               />
             </div>
           ) : (
-            <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3">
               <div className="flex items-center gap-2">
-                <FileText size={16} className="text-gray-400" />
-                <span className="text-sm text-gray-700 font-medium truncate flex-1">{file.name}</span>
-                <button onClick={() => { setFile(null); setPreview(""); setTitle(""); }} className="text-gray-300 hover:text-gray-500">
+                <FileText size={16} className="text-gray-400 dark:text-gray-500" />
+                <span className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate flex-1">{file.name}</span>
+                <button onClick={() => { setFile(null); setPreview(""); setTitle(""); }} className="text-gray-300 hover:text-gray-500 dark:text-gray-500">
                   <X size={14} />
                 </button>
               </div>
-              <div className="bg-gray-50 rounded p-2">
-                <p className="text-xs text-gray-500 font-mono leading-relaxed whitespace-pre-wrap">{preview}…</p>
+              <div className="bg-gray-50 dark:bg-gray-900 rounded p-2">
+                <p className="text-xs text-gray-500 dark:text-gray-500 font-mono leading-relaxed whitespace-pre-wrap">{preview}…</p>
               </div>
             </div>
           )}
 
           {file && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Note title</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1">Note title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 placeholder="Meeting name or topic"
               />
             </div>
           )}
 
           <div className="flex justify-end gap-2 pt-1">
-            <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800">
+            <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-500 hover:text-gray-800 dark:text-gray-100">
               Cancel
             </button>
             <button

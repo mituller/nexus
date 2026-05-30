@@ -55,7 +55,7 @@ export function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
-      <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h1>
 
       {/* Personal */}
       <Section title="Personal">
@@ -64,22 +64,22 @@ export function Settings() {
         <Field label="Timezone" type="text" placeholder="America/Chicago" {...field("timezone")} />
         <div className="flex items-center justify-between pt-1">
           <div>
-            <p className="text-xs font-medium text-gray-600">Dark mode</p>
-            <p className="text-xs text-gray-400 mt-0.5">Switch the app to a dark theme</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-500">Dark mode</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Switch the app to a dark theme</p>
           </div>
           <button
             type="button"
             onClick={() => setLocal((p) => ({ ...p, darkMode: !p.darkMode }))}
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${local.darkMode ? "bg-blue-600" : "bg-gray-300"}`}
           >
-            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${local.darkMode ? "translate-x-4" : "translate-x-0.5"}`} />
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white dark:bg-gray-800 shadow transition-transform ${local.darkMode ? "translate-x-4" : "translate-x-0.5"}`} />
           </button>
         </div>
       </Section>
 
       {/* Calendars */}
       <Section title="Calendars">
-        <div className="space-y-1 -mt-1 mb-3 text-xs text-gray-500">
+        <div className="space-y-1 -mt-1 mb-3 text-xs text-gray-500 dark:text-gray-500">
           <p>Paste any <strong>iCal / ICS URL</strong> — works with Outlook, Google Calendar, Apple Calendar, and more.</p>
           <p>
             <strong>Outlook:</strong> Outlook Web → Settings → Calendar → Shared calendars → Publish → copy ICS link.
@@ -90,7 +90,7 @@ export function Settings() {
         </div>
 
         {local.icalFeeds.length === 0 && (
-          <p className="text-sm text-gray-400 py-2">No calendars added yet.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 py-2">No calendars added yet.</p>
         )}
 
         <div className="space-y-2">
@@ -114,9 +114,9 @@ export function Settings() {
 
       {/* GitLab */}
       <Section title="GitLab">
-        <p className="text-xs text-gray-500 -mt-1 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
           Shows issues assigned to you on the Dashboard. Requires a Personal Access Token with{" "}
-          <code className="bg-gray-100 px-1 rounded">read_api</code> scope.
+          <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">read_api</code> scope.
         </p>
         <Field label="GitLab URL" type="text" placeholder="https://gitlab.com" {...field("gitlabUrl")} />
         <Field label="Personal Access Token" type="password" placeholder="glpat-…" {...field("gitlabToken")} />
@@ -132,16 +132,16 @@ export function Settings() {
           placeholder="123"
           {...field("gitlabDefaultProjectId")}
         />
-        <p className="text-xs text-gray-400">
-          To create issues from tasks, your token needs <code className="bg-gray-100 px-1 rounded">api</code> scope (not just <code className="bg-gray-100 px-1 rounded">read_api</code>).
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          To create issues from tasks, your token needs <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">api</code> scope (not just <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">read_api</code>).
         </p>
       </Section>
 
       {/* AWS Bedrock */}
       <Section title="Claude AI — via AWS Bedrock">
-        <p className="text-xs text-gray-500 -mt-1 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
           Uses your existing AWS profile. Run{" "}
-          <code className="bg-gray-100 px-1 rounded">aws sso login --profile {local.bedrockProfile || "freshservice-bedrock"}</code>{" "}
+          <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">aws sso login --profile {local.bedrockProfile || "freshservice-bedrock"}</code>{" "}
           before using AI features if your session has expired.
         </p>
         <Field label="AWS Profile" type="text" placeholder="freshservice-bedrock" {...field("bedrockProfile")} />
@@ -179,7 +179,7 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
   const [showColors, setShowColors] = useState(false);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 bg-white space-y-2">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 space-y-2">
       <div className="flex items-center gap-2">
         <GripVertical size={14} className="text-gray-300 shrink-0" />
 
@@ -192,7 +192,7 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
             title="Pick color"
           />
           {showColors && (
-            <div className="absolute top-7 left-0 z-10 flex gap-1.5 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+            <div className="absolute top-7 left-0 z-10 flex gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2">
               {FEED_COLORS.map((c) => (
                 <button
                   key={c}
@@ -210,10 +210,10 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
           placeholder="Calendar name"
           value={feed.label}
           onChange={(e) => onChange({ label: e.target.value })}
-          className="flex-shrink-0 w-40 px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-shrink-0 w-40 px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
         />
 
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer ml-auto">
+        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-500 cursor-pointer ml-auto">
           <input
             type="checkbox"
             checked={feed.enabled}
@@ -233,7 +233,7 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
         placeholder="https://…/calendar.ics"
         value={feed.url}
         onChange={(e) => onChange({ url: e.target.value })}
-        className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+        className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
       />
     </div>
   );
@@ -244,8 +244,8 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-sm font-semibold text-gray-800 mb-3">{title}</h2>
-      <div className="space-y-3 bg-white rounded-lg border border-gray-200 px-4 py-4">
+      <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">{title}</h2>
+      <div className="space-y-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-4">
         {children}
       </div>
     </section>
@@ -263,13 +263,13 @@ interface FieldProps {
 function Field({ label, type, placeholder, value, onChange }: FieldProps) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1">{label}</label>
       <input
         type={type}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
       />
     </div>
   );

@@ -128,36 +128,36 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-start justify-center pt-24 z-50 px-4" onClick={onClose}>
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* Input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200">
-          <Search size={16} className="text-gray-400 shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <Search size={16} className="text-gray-400 dark:text-gray-500 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search notes, tasks, wiki…"
-            className="flex-1 text-sm text-gray-900 placeholder-gray-400 border-none outline-none bg-transparent"
+            className="flex-1 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 border-none outline-none bg-transparent"
           />
           {query && (
-            <button onClick={() => setQuery("")} className="text-gray-300 hover:text-gray-500">
+            <button onClick={() => setQuery("")} className="text-gray-300 hover:text-gray-500 dark:text-gray-500">
               <X size={14} />
             </button>
           )}
-          <kbd className="hidden sm:inline-flex text-xs text-gray-400 border border-gray-200 rounded px-1.5 py-0.5">esc</kbd>
+          <kbd className="hidden sm:inline-flex text-xs text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">esc</kbd>
         </div>
 
         {/* Results */}
         <div className="max-h-80 overflow-y-auto">
           {!query && (
-            <p className="text-xs text-gray-400 text-center py-8">Start typing to search across notes, tasks, and wiki pages.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-8">Start typing to search across notes, tasks, and wiki pages.</p>
           )}
           {query && results.length === 0 && (
-            <p className="text-xs text-gray-400 text-center py-8">No results for "{query}"</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-8">No results for "{query}"</p>
           )}
           {results.map((r, i) => (
             <button
@@ -165,12 +165,12 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
               onClick={() => { onNavigate(r.type, r.id); onClose(); }}
               onMouseEnter={() => setActive(i)}
               className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-gray-50 last:border-0
-                ${i === active ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                ${i === active ? "bg-blue-50" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
             >
               <span className={`mt-0.5 shrink-0 ${TYPE_COLOR[r.type]}`}>{TYPE_ICON[r.type]}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{renderTitle(r.title)}</p>
-                <p className="text-xs text-gray-400 truncate mt-0.5">{r.excerpt}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{renderTitle(r.title)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{r.excerpt}</p>
               </div>
               <span className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded ${
                 r.type === "note" ? "bg-blue-50 text-blue-600" :
@@ -182,10 +182,10 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 bg-gray-50">
-          <span className="flex items-center gap-1 text-xs text-gray-400"><kbd className="border border-gray-200 rounded px-1 bg-white">↑↓</kbd> navigate</span>
-          <span className="flex items-center gap-1 text-xs text-gray-400"><kbd className="border border-gray-200 rounded px-1 bg-white">↵</kbd> open</span>
-          <span className="flex items-center gap-1 text-xs text-gray-400"><kbd className="border border-gray-200 rounded px-1 bg-white">esc</kbd> close</span>
+        <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-800">↑↓</kbd> navigate</span>
+          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-800">↵</kbd> open</span>
+          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-800">esc</kbd> close</span>
           <span className="ml-auto text-xs text-gray-300">{results.length > 0 ? `${results.length} result${results.length !== 1 ? "s" : ""}` : ""}</span>
         </div>
       </div>
