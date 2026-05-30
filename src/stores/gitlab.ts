@@ -27,9 +27,10 @@ export const useGitLabStore = create<GitLabStore>((set) => ({
 
     set({ loading: true, error: null });
     try {
-      const [user, issues, mrs] = await Promise.all([
-        getGitLabUser(settings.gitlabUrl, settings.gitlabToken),
-        getAssignedIssues(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters),
+      // Fetch user first so we have their ID for reliable assignee filtering
+      const user = await getGitLabUser(settings.gitlabUrl, settings.gitlabToken);
+      const [issues, mrs] = await Promise.all([
+        getAssignedIssues(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters, user.id),
         getOpenMergeRequests(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters),
       ]);
       set({ user, issues, mrs, connected: true, loading: false });

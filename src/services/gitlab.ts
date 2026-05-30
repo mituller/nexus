@@ -82,10 +82,13 @@ export async function getGitLabUser(baseUrl: string, token: string): Promise<Git
 export async function getAssignedIssues(
   baseUrl: string,
   token: string,
-  projectFilters?: string
+  projectFilters?: string,
+  userId?: number
 ): Promise<GitLabIssue[]> {
   const { origin, group } = parseGitLabUrl(baseUrl);
-  const base = "?assigned_to_me=true&state=opened&per_page=30&order_by=updated_at";
+  // Use assignee_id when we have the user ID — more reliable than assigned_to_me on group endpoints
+  const assigneeFilter = userId ? `assignee_id=${userId}` : "assigned_to_me=true&scope=assigned_to_me";
+  const base = `?${assigneeFilter}&state=opened&per_page=30&order_by=updated_at`;
 
   let path: string;
 
