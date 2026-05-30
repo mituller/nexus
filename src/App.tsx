@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, Component, ErrorInfo, ReactNode } from "react";
 import { Layout } from "./components/layout/Layout";
 import { useSettingsStore } from "./stores/settings";
 import { useTaskStore } from "./stores/tasks";
@@ -56,3 +56,31 @@ export default function App() {
 
   return <Layout />;
 }
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error("App error:", error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen gap-4 text-gray-500 bg-gray-50 px-8">
+          <p className="text-lg font-semibold text-gray-700">Something went wrong</p>
+          <p className="text-sm text-center max-w-md">{this.state.error.message}</p>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export { ErrorBoundary };

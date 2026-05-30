@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, FileText, Mic, Trash2 } from "lucide-react";
+import { Plus, Search, FileText, Upload, Mail, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNotesStore } from "../../stores/notes";
 
@@ -42,7 +42,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
             title="Import transcript"
             className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-md text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:text-gray-300 transition-colors"
           >
-            <Mic size={15} />
+            <Upload size={15} />
           </button>
         </div>
         <div className="relative">
@@ -73,8 +73,10 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
           >
             <div className="flex items-start justify-between gap-1">
               <div className="flex items-center gap-1.5 min-w-0">
-                {note.sourceType === "transcript" ? (
-                  <Mic size={12} className="text-purple-500 shrink-0" />
+                {note.tags.includes("email") ? (
+                  <Mail size={12} className="text-blue-500 shrink-0" />
+                ) : note.tags.includes("transcript") ? (
+                  <Upload size={12} className="text-purple-500 shrink-0" />
                 ) : (
                   <FileText size={12} className="text-gray-400 dark:text-gray-500 shrink-0" />
                 )}

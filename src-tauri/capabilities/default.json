@@ -28,6 +28,11 @@
     "notification:default",
     "notification:allow-notify",
     "notification:allow-request-permission",
-    "notification:allow-check-permissions"
+    "notification:allow-check-permissions",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "$HOME/**" }]
+    },
+    "fs:allow-exists"
   ]
 }
