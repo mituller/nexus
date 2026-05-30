@@ -6,6 +6,9 @@ interface WikiStore {
   pages: WikiPage[];
   activePageId: string | null;
   loading: boolean;
+  expandedCategories: Partial<Record<WikiEntityType, boolean>>;
+  toggleCategory: (type: WikiEntityType) => void;
+  expandCategories: (types: WikiEntityType[]) => void;
   load: () => Promise<void>;
   create: (page: Omit<WikiPage, "id" | "createdAt" | "updatedAt">) => Promise<WikiPage>;
   update: (id: string, updates: Partial<Omit<WikiPage, "id" | "createdAt">>) => Promise<void>;
@@ -18,6 +21,18 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
   pages: [],
   activePageId: null,
   loading: false,
+  expandedCategories: {}, // all start collapsed
+
+  toggleCategory: (type) => {
+    const current = get().expandedCategories[type] ?? false;
+    set((s) => ({ expandedCategories: { ...s.expandedCategories, [type]: !current } }));
+  },
+
+  expandCategories: (types) => {
+    const patch: Partial<Record<WikiEntityType, boolean>> = {};
+    for (const t of types) patch[t] = true;
+    set((s) => ({ expandedCategories: { ...s.expandedCategories, ...patch } }));
+  },
 
   load: async () => {
     set({ loading: true });

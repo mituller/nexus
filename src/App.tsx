@@ -21,7 +21,7 @@ export default function App() {
     loadTasks();
     loadNotes();
     loadWiki();
-  }, [loadSettings, loadTasks]);
+  }, [loadSettings, loadTasks, loadNotes, loadWiki]);
 
   // Apply dark mode class to <html>
   useEffect(() => {

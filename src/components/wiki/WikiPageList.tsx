@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Plus, Trash2, ChevronRight } from "lucide-react";
 import { useWikiStore } from "../../stores/wiki";
 import { WikiEntityType, WikiPage } from "../../types";
 
@@ -26,7 +26,7 @@ interface WikiPageListProps {
 }
 
 export function WikiPageList({ onNewPage }: WikiPageListProps) {
-  const { pages, activePageId, setActive, remove } = useWikiStore();
+  const { pages, activePageId, setActive, remove, expandedCategories, toggleCategory, expandCategories } = useWikiStore();
   const [search, setSearch] = useState("");
 
   const filtered = pages.filter(
@@ -40,6 +40,13 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
     acc[type] = filtered.filter((p) => p.entityType === type);
     return acc;
   }, {} as Record<WikiEntityType, WikiPage[]>);
+
+  // Auto-expand categories that have search matches
+  useEffect(() => {
+    if (!search) return;
+    const matchingTypes = ENTITY_ORDER.filter((t) => grouped[t].length > 0);
+    if (matchingTypes.length > 0) expandCategories(matchingTypes);
+  }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col h-full border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -74,15 +81,25 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
         {ENTITY_ORDER.map((type) => {
           const group = grouped[type];
           if (group.length === 0) return null;
+          const isOpen = expandedCategories[type] ?? false;
+
           return (
-            <div key={type} className="mb-1">
-              <div className="px-3 py-1.5 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <div key={type} className="mb-0.5">
+              <button
+                onClick={() => toggleCategory(type)}
+                className="w-full px-3 py-1.5 flex items-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
+              >
+                <ChevronRight
+                  size={13}
+                  className={`text-gray-400 dark:text-gray-500 shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
+                />
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex-1 text-left">
                   {ENTITY_LABELS[type]}
                 </span>
-                <span className="text-xs text-gray-300">{group.length}</span>
-              </div>
-              {group.map((page) => (
+                <span className="text-xs text-gray-300 dark:text-gray-600">{group.length}</span>
+              </button>
+
+              {isOpen && group.map((page) => (
                 <PageRow
                   key={page.id}
                   page={page}
@@ -112,11 +129,11 @@ function PageRow({ page, active, colorClass, onClick, onDelete }: PageRowProps) 
   return (
     <button
       onClick={onClick}
-      className={`group w-full text-left px-3 py-2 border-b border-gray-50 transition-colors
-        ${active ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
+      className={`group w-full text-left px-3 py-2 border-b border-gray-50 dark:border-gray-700 transition-colors
+        ${active ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
     >
       <div className="flex items-center justify-between gap-1">
-        <p className="text-sm text-gray-800 dark:text-gray-100 truncate flex-1">{page.title}</p>
+        <p className="text-sm text-gray-800 dark:text-gray-100 truncate flex-1 pl-4">{page.title}</p>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all shrink-0"
@@ -124,12 +141,12 @@ function PageRow({ page, active, colorClass, onClick, onDelete }: PageRowProps) 
           <Trash2 size={12} />
         </button>
       </div>
-      <div className="flex items-center gap-2 mt-0.5">
+      <div className="flex items-center gap-2 mt-0.5 pl-4">
         <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${colorClass}`}>
           {page.entityType}
         </span>
         {page.sourceIds.length > 0 && (
-          <span className="text-xs text-gray-300">{page.sourceIds.length} source{page.sourceIds.length !== 1 ? "s" : ""}</span>
+          <span className="text-xs text-gray-300 dark:text-gray-600">{page.sourceIds.length} source{page.sourceIds.length !== 1 ? "s" : ""}</span>
         )}
       </div>
     </button>

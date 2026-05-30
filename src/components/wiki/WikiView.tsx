@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, AlertTriangle, Search, X, Loader2, CheckCircle2, Network } from "lucide-react";
 import { WikiGraph } from "./WikiGraph";
 import { useWikiStore } from "../../stores/wiki";
@@ -21,7 +21,12 @@ interface IngestProgress {
 }
 
 export function WikiView() {
-  const { pages, create: createPage, upsertByTitle, setActive, load: loadWiki } = useWikiStore();
+  const { pages, create: createPage, upsertByTitle, setActive, load: loadWiki, loading } = useWikiStore();
+
+  // Load pages on mount in case App.tsx startup already ran before store was ready
+  useEffect(() => {
+    if (pages.length === 0 && !loading) loadWiki();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const { notes } = useNotesStore();
   const { tasks } = useTaskStore();
   const { settings } = useSettingsStore();
