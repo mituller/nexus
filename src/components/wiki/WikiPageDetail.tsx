@@ -1,0 +1,162 @@
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Edit3, Eye, Save, BookOpen } from "lucide-react";
+import { marked } from "marked";
+import { useWikiStore } from "../../stores/wiki";
+import { ENTITY_COLORS } from "./WikiPageList";
+import { WikiEntityType } from "../../types";
+
+const ENTITY_TYPES: WikiEntityType[] = ["person", "project", "decision", "meeting", "concept", "general"];
+
+export function WikiPageDetail() {
+  const { pages, activePageId, update, setActive } = useWikiStore();
+  const page = pages.find((p) => p.id === activePageId) ?? null;
+
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [entityType, setEntityType] = useState<WikiEntityType>("general");
+  const [dirty, setDirty] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (page) {
+      setTitle(page.title);
+      setContent(page.content);
+      setEntityType(page.entityType);
+      setDirty(false);
+      setEditing(false);
+    }
+  }, [activePageId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function scheduleAutoSave(t: string, c: string, et: WikiEntityType) {
+    if (!activePageId) return;
+    setDirty(true);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      await update(activePageId, { title: t, content: c, entityType: et });
+      setDirty(false);
+    }, 1000);
+  }
+
+  // O(1) lookup instead of O(n) pages.some() per wikilink
+  const pageTitleSet = useMemo(
+    () => new Set(pages.map((p) => p.title.toLowerCase())),
+    [pages]
+  );
+
+  const renderedHtml = useMemo(() => {
+    const md = content || "*No content yet. Switch to Edit mode to add content.*";
+    const linked = md.replace(/\[\[([^\]]+)\]\]/g, (_, t) => {
+      const exists = pageTitleSet.has(t.toLowerCase());
+      const cls = exists
+        ? "wiki-link text-blue-600 hover:text-blue-800 underline underline-offset-2 cursor-pointer font-medium"
+        : "wiki-link text-gray-400 hover:text-gray-600 underline underline-offset-2 cursor-pointer italic";
+      return `<a class="${cls}" data-wiki-title="${encodeURIComponent(t)}" href="#">${t}</a>`;
+    });
+    return marked.parse(linked) as string;
+  }, [content, pageTitleSet]);
+
+  const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = (e.target as HTMLElement).closest("[data-wiki-title]");
+    if (!target) return;
+    e.preventDefault();
+    const title = decodeURIComponent(target.getAttribute("data-wiki-title") ?? "");
+    const found = pages.find((p) => p.title.toLowerCase() === title.toLowerCase());
+    if (found) setActive(found.id);
+  }, [pages, setActive]);
+
+  if (!page) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-300">
+        <BookOpen size={48} className="opacity-30 mb-3" />
+        <p className="text-sm">Select a page or create one.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setEditing(false)}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors
+              ${!editing ? "bg-gray-100 text-gray-700" : "text-gray-400 hover:text-gray-600"}`}
+          >
+            <Eye size={12} /> View
+          </button>
+          <button
+            onClick={() => setEditing(true)}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors
+              ${editing ? "bg-gray-100 text-gray-700" : "text-gray-400 hover:text-gray-600"}`}
+          >
+            <Edit3 size={12} /> Edit
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <span className="flex items-center gap-1 text-xs text-gray-400">
+              <Save size={11} /> Saving…
+            </span>
+          )}
+          <select
+            value={entityType}
+            onChange={(e) => {
+              const et = e.target.value as WikiEntityType;
+              setEntityType(et);
+              scheduleAutoSave(title, content, et);
+            }}
+            className="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {ENTITY_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Title */}
+      <div className="px-6 pt-5 pb-2 shrink-0">
+        {editing ? (
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); scheduleAutoSave(e.target.value, content, entityType); }}
+            className="w-full text-2xl font-bold text-gray-900 border-none outline-none bg-transparent"
+          />
+        ) : (
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">{page.title}</h1>
+            <span className={`text-xs px-2 py-0.5 rounded font-medium ${ENTITY_COLORS[page.entityType]}`}>
+              {page.entityType}
+            </span>
+          </div>
+        )}
+        {page.sourceIds.length > 0 && !editing && (
+          <p className="text-xs text-gray-400 mt-1">
+            Compiled from {page.sourceIds.length} note{page.sourceIds.length !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 pb-8">
+        {editing ? (
+          <textarea
+            value={content}
+            onChange={(e) => { setContent(e.target.value); scheduleAutoSave(title, e.target.value, entityType); }}
+            placeholder="Write wiki page content in Markdown. Use [[Other Page]] to cross-link."
+            className="w-full h-full min-h-64 text-sm text-gray-800 leading-relaxed border-none outline-none resize-none bg-transparent font-mono"
+          />
+        ) : (
+          <div
+            className="prose prose-sm max-w-none text-gray-800"
+            onClick={handleContentClick}
+            dangerouslySetInnerHTML={{ __html: renderedHtml }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

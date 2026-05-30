@@ -1,0 +1,112 @@
+import { useState } from "react";
+import { X } from "lucide-react";
+import { useTaskStore } from "../../stores/tasks";
+import { Task } from "../../types";
+
+interface TaskFormProps {
+  onClose: () => void;
+}
+
+export function TaskForm({ onClose }: TaskFormProps) {
+  const { add } = useTaskStore();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<Task["priority"]>("medium");
+  const [dueDate, setDueDate] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setSaving(true);
+    const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+    await add({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      status: "open",
+      priority,
+      dueDate: dueDate || undefined,
+      tags,
+    });
+    setSaving(false);
+    onClose();
+  }
+
+  return (
+    <div className="mb-4 bg-white rounded-lg border border-blue-200 shadow-sm p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-800">New Task</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <X size={16} />
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          autoFocus
+          type="text"
+          placeholder="Task title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <textarea
+          placeholder="Description (optional)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="block text-xs text-gray-500 mb-1">Priority</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as Task["priority"])}
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-gray-500 mb-1">Due date</label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-gray-500 mb-1">Tags (comma-sep)</label>
+            <input
+              type="text"
+              placeholder="work, meeting"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!title.trim() || saving}
+            className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving…" : "Add task"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

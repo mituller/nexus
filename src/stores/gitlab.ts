@@ -1,0 +1,41 @@
+import { create } from "zustand";
+import { GitLabIssue, GitLabUser, getAssignedIssues, getGitLabUser } from "../services/gitlab";
+import { useSettingsStore } from "./settings";
+
+interface GitLabStore {
+  issues: GitLabIssue[];
+  user: GitLabUser | null;
+  loading: boolean;
+  connected: boolean;
+  error: string | null;
+  fetch: () => Promise<void>;
+  openIssue: (url: string) => void;
+}
+
+export const useGitLabStore = create<GitLabStore>((set) => ({
+  issues: [],
+  user: null,
+  loading: false,
+  connected: false,
+  error: null,
+
+  fetch: async () => {
+    const { settings } = useSettingsStore.getState();
+    if (!settings.gitlabToken || !settings.gitlabUrl) return;
+
+    set({ loading: true, error: null });
+    try {
+      const [user, issues] = await Promise.all([
+        getGitLabUser(settings.gitlabUrl, settings.gitlabToken),
+        getAssignedIssues(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters),
+      ]);
+      set({ user, issues, connected: true, loading: false });
+    } catch (e) {
+      set({ error: String(e), connected: false, loading: false });
+    }
+  },
+
+  openIssue: (url) => {
+    import("@tauri-apps/plugin-shell").then((m) => m.open(url));
+  },
+}));

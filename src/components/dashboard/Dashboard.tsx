@@ -1,0 +1,183 @@
+import { useState, useEffect, useMemo } from "react";
+import { RefreshCw, Calendar, CheckSquare } from "lucide-react";
+import { format, addDays } from "date-fns";
+import { useCalendarStore } from "../../stores/calendar";
+import { useSettingsStore } from "../../stores/settings";
+import { useTaskStore } from "../../stores/tasks";
+import { useGitLabStore } from "../../stores/gitlab";
+import { StatsBar } from "./StatsBar";
+import { HeadsUpSection } from "./HeadsUpSection";
+import { MeetingCard } from "./MeetingCard";
+import { DashboardTaskItem } from "./DashboardTaskItem";
+import { GitLabSection } from "./GitLabSection";
+
+export function Dashboard() {
+  const { settings } = useSettingsStore();
+  const { tasks } = useTaskStore();
+  const {
+    todayEvents, tomorrowEvents, briefing,
+    loadingEvents, loadingBriefing, connected, lastFetched,
+    fetchEvents, generateBriefing,
+  } = useCalendarStore();
+  const { fetch: fetchGitLab } = useGitLabStore();
+
+  // Live clock — updates every minute so greeting and time stay current
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Fetch on mount if data is missing or stale (> 10 min old)
+  useEffect(() => {
+    const stale = !lastFetched || (Date.now() - lastFetched.getTime()) > 10 * 60_000;
+    if (hasFeeds && stale && !loadingEvents) {
+      fetchEvents().then(() => generateBriefing());
+      fetchGitLab();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const h = now.getHours();
+  const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  const name = settings.userName || "there";
+  const hasFeeds = settings.icalFeeds.some((f) => f.enabled && f.url);
+  const openTasks = useMemo(() => tasks.filter((t) => t.status !== "done"), [tasks]);
+
+  async function handleRefresh() {
+    await Promise.all([fetchEvents(), fetchGitLab()]);
+    await generateBriefing(true);
+  }
+
+  return (
+    <div className="px-8 py-6 space-y-5 min-h-full">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{greeting}, {name}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {format(now, "EEEE, MMMM d")} · {format(now, "h:mm a")}
+            {lastFetched && (
+              <span className="ml-2 text-gray-400">
+                · Calendar updated {format(lastFetched, "h:mm a")}
+              </span>
+            )}
+            {loadingEvents && <span className="ml-2 text-blue-400 animate-pulse">· Fetching…</span>}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={loadingEvents || loadingBriefing}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-40 transition-colors"
+        >
+          <RefreshCw size={14} className={(loadingEvents || loadingBriefing) ? "animate-spin" : ""} />
+          Refresh
+        </button>
+      </div>
+
+      {!hasFeeds && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          No calendars added yet. Go to <strong>Settings → Calendars</strong> and paste your Outlook or Google iCal URL.
+        </div>
+      )}
+
+      {/* Loading skeleton while events fetch */}
+      {loadingEvents && (
+        <div className="space-y-2 animate-pulse">
+          <div className="h-20 bg-gray-100 rounded-lg" />
+          <div className="h-14 bg-gray-100 rounded-lg" />
+          <div className="h-14 bg-gray-100 rounded-lg" />
+        </div>
+      )}
+
+      {hasFeeds && !connected && !loadingEvents && (
+        <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+          Could not load calendar feeds — check your iCal URLs in <strong>Settings</strong> or hit Refresh.
+        </div>
+      )}
+
+      {/* Stats bar */}
+      {briefing && !loadingEvents && <StatsBar stats={briefing.stats} />}
+
+      {/* Heads Up — full width */}
+      {briefing && briefing.headsUp.length > 0 && (
+        <HeadsUpSection items={briefing.headsUp} />
+      )}
+
+      {/* Two-column body */}
+      <div className="grid grid-cols-5 gap-6 items-start">
+
+        {/* Left column — meetings (3/5 width) */}
+        <div className="col-span-3 space-y-5">
+
+          {todayEvents.length > 0 && (
+            <section>
+              <SectionHeader icon={<Calendar size={13} />}>
+                Today's Meetings — {format(now, "MMMM d")}
+              </SectionHeader>
+              <div className="space-y-2">
+                {todayEvents.map((e) => <MeetingCard key={e.id} event={e} />)}
+              </div>
+            </section>
+          )}
+
+          {tomorrowEvents.length > 0 && (
+            <section>
+              <SectionHeader icon={<Calendar size={13} />}>
+                Tomorrow — {format(addDays(now, 1), "EEEE MMMM d")}
+              </SectionHeader>
+              <div className="space-y-2">
+                {tomorrowEvents.map((e) => <MeetingCard key={e.id} event={e} />)}
+              </div>
+            </section>
+          )}
+
+          {/* Narrative */}
+          {briefing?.narrative && (
+            <section className="border-t border-gray-200 pt-5">
+              <p className="text-sm font-medium text-gray-700 mb-2">A few things worth calling out:</p>
+              <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                {briefing.narrative}
+              </div>
+              <p className="mt-3 text-xs text-gray-400">
+                Generated {format(new Date(briefing.generatedAt), "h:mm a")}
+                {loadingBriefing && " · Refreshing…"}
+              </p>
+            </section>
+          )}
+
+          {loadingBriefing && !briefing && (
+            <p className="text-sm text-gray-400 animate-pulse">Generating your briefing…</p>
+          )}
+        </div>
+
+        {/* Right column — tasks + GitLab (2/5 width) */}
+        <div className="col-span-2 space-y-5">
+
+          {openTasks.length > 0 && (
+            <section>
+              <SectionHeader icon={<CheckSquare size={13} />}>
+                Open Tasks
+              </SectionHeader>
+              <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden bg-white">
+                {openTasks.slice(0, 8).map((t) => <DashboardTaskItem key={t.id} task={t} />)}
+              </div>
+            </section>
+          )}
+
+          <GitLabSection />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+      {icon}
+      {children}
+    </h2>
+  );
+}

@@ -1,0 +1,242 @@
+import { CalendarEvent, Task, DailyBriefing, HeadsUpItem, ExtractedNoteData, TaskPriority, BedrockConfig } from "../types";
+import { format, isBefore, parseISO } from "date-fns";
+import { callClaude } from "./bedrock";
+
+export function hasBedrockConfig(cfg: BedrockConfig): boolean {
+  return !!(cfg.profile && cfg.region && cfg.modelId);
+}
+
+export async function generateDailyBriefing(
+  cfg: BedrockConfig,
+  userName: string,
+  todayEvents: CalendarEvent[],
+  tomorrowEvents: CalendarEvent[],
+  tasks: Task[]
+): Promise<DailyBriefing> {
+  const now = new Date();
+  const today = format(now, "EEEE, MMMM d, yyyy");
+  const h = now.getHours();
+  const timeOfDay = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
+  const timeStr = `${format(now, "h:mm a")} (${timeOfDay})`;
+
+  const openTasks = tasks.filter((t) => t.status !== "done");
+  const overdueTasks = openTasks.filter(
+    (t) => t.dueDate && isBefore(parseISO(t.dueDate), now)
+  );
+  const highPriorityTasks = openTasks.filter((t) => t.priority === "high");
+
+  // For the narrative, only show events still upcoming or in progress — not already finished
+  const upcomingToday = todayEvents.filter((e) => parseISO(e.end) > now);
+  const tentativeToday = upcomingToday.filter((e) => e.isTentative);
+
+  const headsUp: HeadsUpItem[] = [];
+
+  for (const t of overdueTasks) {
+    headsUp.push({
+      type: "overdue",
+      message: `Overdue: "${t.title}" — was due ${t.dueDate ? format(parseISO(t.dueDate), "MMM d") : "recently"}.`,
+    });
+  }
+
+  if (tentativeToday.length > 0) {
+    const names = tentativeToday.map((e) => e.title).join(" and ");
+    headsUp.push({ type: "tentative", message: `Tentative: ${names} — you may want to confirm attendance.` });
+  }
+
+  // Back-to-back detection
+  const sorted = [...todayEvents].sort((a, b) => a.start.localeCompare(b.start));
+  let streakStart = -1, streakLen = 0;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const gapMs = parseISO(sorted[i + 1].start).getTime() - parseISO(sorted[i].end).getTime();
+    if (gapMs <= 5 * 60 * 1000) {
+      if (streakLen === 0) streakStart = i;
+      streakLen++;
+    } else {
+      if (streakLen >= 2) {
+        const start = format(parseISO(sorted[streakStart].start), "h:mm a");
+        const end = format(parseISO(sorted[streakStart + streakLen].end), "h:mm a");
+        const names = sorted.slice(streakStart, streakStart + streakLen + 1).map((e) => e.title).join(" → ");
+        headsUp.push({ type: "back_to_back", message: `Back-to-back: ${start}–${end} (${names}) with no gaps.` });
+      }
+      streakLen = 0;
+    }
+  }
+
+  const tomorrowTentative = tomorrowEvents.filter((e) => e.isTentative);
+  for (const e of tomorrowTentative.slice(0, 2)) {
+    headsUp.push({ type: "tomorrow", message: `Tomorrow: ${e.title} (${format(parseISO(e.start), "h:mm a")}) — still tentative.` });
+  }
+
+  let narrative = "";
+  try {
+    narrative = await callClaude(cfg, [{ role: "user", content: buildNarrativePrompt(userName, today, timeStr, upcomingToday, tomorrowEvents, openTasks) }]);
+  } catch (e) {
+    narrative = `Unable to generate narrative — check your Bedrock settings (profile: ${cfg.profile}).`;
+  }
+
+  return {
+    stats: {
+      meetingsToday: todayEvents.length,
+      highPriorityTasks: highPriorityTasks.length,
+      overdueTasks: overdueTasks.length,
+      unreadAlerts: headsUp.length,
+    },
+    headsUp,
+    narrative,
+    generatedAt: now.toISOString(),
+  };
+}
+
+function buildNarrativePrompt(
+  name: string,
+  today: string,
+  timeOfDay: string,
+  todayEvents: CalendarEvent[],
+  tomorrowEvents: CalendarEvent[],
+  tasks: Task[]
+): string {
+  const meetingList = todayEvents
+    .map((e) => `- ${e.title} (${format(parseISO(e.start), "h:mm a")}–${format(parseISO(e.end), "h:mm a")}, ${e.isOrganizer ? "organizer" : "attendee"}${e.isTentative ? ", tentative" : ""})`)
+    .join("\n");
+  const taskList = tasks.slice(0, 8).map((t) => `- ${t.title} [${t.priority}${t.dueDate ? `, due ${t.dueDate}` : ""}]`).join("\n");
+  const tomorrowList = tomorrowEvents.slice(0, 3).map((e) => `- ${e.title} (${format(parseISO(e.start), "h:mm a")})`).join("\n");
+
+  return `You are a smart daily briefing assistant. Write a concise, helpful narrative for ${name}. Current time: ${timeOfDay} on ${today}. Do NOT start with a greeting — the app already shows one. The meetings listed are UPCOMING (not yet ended). If the list is empty, focus on tomorrow and open tasks instead. Be specific and actionable. 3-4 short paragraphs max. Flowing prose only — no bullet points.
+
+TODAY'S MEETINGS:
+${meetingList || "No meetings today."}
+
+OPEN TASKS (top priority):
+${taskList || "No open tasks."}
+
+TOMORROW'S MEETINGS:
+${tomorrowList || "No meetings tomorrow."}`;
+}
+
+// ─── Note / transcript extraction ───────────────────────────────────────────
+
+export async function extractFromNote(
+  cfg: BedrockConfig,
+  title: string,
+  content: string,
+  isTranscript = false
+): Promise<ExtractedNoteData> {
+  const type = isTranscript ? "meeting transcript" : "note";
+  const prompt = `You are a productivity assistant. Analyze this ${type} and extract structured data.
+
+TITLE: ${title}
+CONTENT:
+${content.slice(0, 8000)}
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "tasks": [
+    {
+      "title": "string — specific action item",
+      "priority": "high" | "medium" | "low",
+      "dueDate": "YYYY-MM-DD or null",
+      "tags": ["string"]
+    }
+  ],
+  "summary": "2-3 sentence summary of key points and decisions",
+  "entities": ["person names", "project names", "key topics mentioned"]
+}
+
+Rules:
+- Only include clear, specific action items as tasks
+- Priority: high = urgent/blocking, medium = this week, low = someday
+- dueDate: only if explicitly mentioned, else null
+- tasks array can be empty if no action items found`;
+
+  const raw = await callClaude(cfg, [{ role: "user", content: prompt }]);
+
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found");
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      tasks: Array<{ title: string; priority: string; dueDate: string | null; tags: string[] }>;
+      summary: string;
+      entities: string[];
+    };
+    return {
+      tasks: parsed.tasks.map((t) => ({
+        title: t.title,
+        priority: (["high", "medium", "low"].includes(t.priority) ? t.priority : "medium") as TaskPriority,
+        dueDate: t.dueDate ?? undefined,
+        tags: t.tags ?? [],
+      })),
+      summary: parsed.summary ?? "",
+      entities: parsed.entities ?? [],
+    };
+  } catch {
+    return { tasks: [], summary: "", entities: [] };
+  }
+}
+
+// ─── VTT / transcript cleaning ───────────────────────────────────────────────
+
+export function cleanTranscriptText(raw: string): string {
+  // Split into cue blocks (separated by blank lines)
+  const blocks = raw.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+
+  const segments: { speaker: string; text: string }[] = [];
+
+  for (const block of blocks) {
+    // Skip the WEBVTT header and NOTE blocks
+    if (/^WEBVTT/i.test(block) || /^NOTE\b/i.test(block)) continue;
+
+    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+
+    // Find the text lines (skip cue number and timestamp line)
+    const textLines = lines.filter(
+      (l) => !/^\d+$/.test(l) && !/^\d{2}:\d{2}/.test(l)
+    );
+    if (textLines.length === 0) continue;
+
+    let text = textLines.join(" ");
+
+    // Extract speaker from <v Speaker Name> tag (Teams format)
+    const speakerMatch = text.match(/^<v\s+([^>]+)>([\s\S]*)/);
+    let speaker = "";
+    if (speakerMatch) {
+      speaker = speakerMatch[1].trim();
+      text = speakerMatch[2];
+    }
+
+    // Strip all remaining VTT/HTML tags (<c>, <00:00:00.000>, </v>, etc.)
+    text = text
+      .replace(/<\d{2}:\d{2}:\d{2}\.\d+>/g, "")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+
+    if (!text) continue;
+    segments.push({ speaker, text });
+  }
+
+  if (segments.length === 0) {
+    // Fallback for non-standard VTT
+    return raw
+      .replace(/^WEBVTT.*$/gm, "")
+      .replace(/^\d{2}:\d{2}[\d:.,\s-->]+$/gm, "")
+      .replace(/^NOTE\b.*$/gm, "")
+      .replace(/^\d+$/gm, "")
+      .replace(/<[^>]+>/g, "")
+      .split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
+  }
+
+  // Merge consecutive lines from the same speaker into one paragraph
+  const merged: { speaker: string; text: string }[] = [];
+  for (const seg of segments) {
+    const last = merged[merged.length - 1];
+    if (last && last.speaker === seg.speaker) {
+      last.text += " " + seg.text;
+    } else {
+      merged.push({ ...seg });
+    }
+  }
+
+  // Format: bold speaker name followed by their text, blank line between speakers
+  return merged
+    .map(({ speaker, text }) => (speaker ? `**${speaker}:** ${text}` : text))
+    .join("\n\n");
+}
