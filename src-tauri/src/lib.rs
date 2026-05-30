@@ -1,3 +1,4 @@
+use tauri::Manager;
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 #[tauri::command]
@@ -61,6 +62,15 @@ pub fn run() {
     ];
 
     tauri::Builder::default()
+        .setup(|app| {
+            // Set the dock/window icon explicitly so it shows in dev mode
+            if let Some(icon) = app.default_window_icon().cloned() {
+                for window in app.webview_windows().values() {
+                    let _ = window.set_icon(icon.clone());
+                }
+            }
+            Ok(())
+        })
         .plugin(
             tauri_plugin_sql::Builder::new()
                 .add_migrations("sqlite:nexus.db", migrations)
