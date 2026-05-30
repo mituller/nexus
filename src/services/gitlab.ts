@@ -18,6 +18,24 @@ export interface GitLabIssue {
   updatedAt: string;
 }
 
+export interface GitLabMR {
+  id: number;
+  iid: number;
+  title: string;
+  state: "opened" | "closed" | "merged";
+  webUrl: string;
+  projectName: string;
+  projectPath: string;
+  sourceBranch: string;
+  targetBranch: string;
+  isDraft: boolean;
+  hasConflicts: boolean;
+  labels: string[];
+  milestone?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface GitLabUser {
   id: number;
   username: string;
@@ -144,4 +162,52 @@ function extractPriority(labels: string[]): GitLabIssue["priority"] {
   if (lower.some((l) => l.includes("medium"))) return "medium";
   if (lower.some((l) => l.includes("low"))) return "low";
   return undefined;
+}
+
+export async function getOpenMergeRequests(
+  baseUrl: string,
+  token: string,
+  projectFilters?: string
+): Promise<GitLabMR[]> {
+  const { origin, group } = parseGitLabUrl(baseUrl);
+  const base = "?scope=created_by_me&state=opened&per_page=20&order_by=updated_at";
+
+  let path: string;
+  if (projectFilters) {
+    const ids = projectFilters.split(",").map((s) => s.trim()).filter(Boolean);
+    path = ids.length > 0
+      ? `/merge_requests${base}&project_ids[]=${ids.join("&project_ids[]=")}`
+      : group ? `/groups/${encodeURIComponent(group)}/merge_requests${base}` : `/merge_requests${base}`;
+  } else if (group) {
+    path = `/groups/${encodeURIComponent(group)}/merge_requests${base}`;
+  } else {
+    path = `/merge_requests${base}`;
+  }
+
+  const raw = await glGet<Record<string, unknown>[]>(origin, token, path);
+
+  return raw.map((mr) => {
+    const refs = mr.references as Record<string, string> | null;
+    const fullRef = refs?.full ?? "";
+    const projectPath = fullRef.replace(/![0-9]+$/, "");
+    const projectName = projectPath.split("/").pop() ?? String(mr.project_id);
+
+    return {
+      id: mr.id as number,
+      iid: mr.iid as number,
+      title: mr.title as string,
+      state: mr.state as GitLabMR["state"],
+      webUrl: mr.web_url as string,
+      projectName,
+      projectPath,
+      sourceBranch: mr.source_branch as string,
+      targetBranch: mr.target_branch as string,
+      isDraft: !!(mr.draft || (mr.title as string).match(/^(Draft|WIP):/i)),
+      hasConflicts: mr.has_conflicts as boolean,
+      labels: (mr.labels as string[]) ?? [],
+      milestone: (mr.milestone as { title: string } | null)?.title,
+      createdAt: mr.created_at as string,
+      updatedAt: mr.updated_at as string,
+    };
+  });
 }

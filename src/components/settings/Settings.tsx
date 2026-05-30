@@ -10,7 +10,7 @@ export function Settings() {
 
   useEffect(() => { setLocal(settings); }, [settings]);
 
-  function field(key: keyof Omit<AppSettings, "icalFeeds" | "bedrockProfile" | "bedrockRegion" | "bedrockModelId"> | "bedrockProfile" | "bedrockRegion" | "bedrockModelId") {
+  function field(key: keyof Omit<AppSettings, "icalFeeds" | "darkMode">) {
     return {
       value: local[key] as string,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -62,6 +62,19 @@ export function Settings() {
         <Field label="Your name" type="text" placeholder="Name" {...field("userName")} />
         <Field label="Email" type="email" placeholder="you@example.com" {...field("userEmail")} />
         <Field label="Timezone" type="text" placeholder="America/Chicago" {...field("timezone")} />
+        <div className="flex items-center justify-between pt-1">
+          <div>
+            <p className="text-xs font-medium text-gray-600">Dark mode</p>
+            <p className="text-xs text-gray-400 mt-0.5">Switch the app to a dark theme</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLocal((p) => ({ ...p, darkMode: !p.darkMode }))}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${local.darkMode ? "bg-blue-600" : "bg-gray-300"}`}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${local.darkMode ? "translate-x-4" : "translate-x-0.5"}`} />
+          </button>
+        </div>
       </Section>
 
       {/* Calendars */}
@@ -113,6 +126,15 @@ export function Settings() {
           placeholder="123, 456"
           {...field("gitlabProjectFilters")}
         />
+        <Field
+          label="Default project ID for creating issues"
+          type="text"
+          placeholder="123"
+          {...field("gitlabDefaultProjectId")}
+        />
+        <p className="text-xs text-gray-400">
+          To create issues from tasks, your token needs <code className="bg-gray-100 px-1 rounded">api</code> scope (not just <code className="bg-gray-100 px-1 rounded">read_api</code>).
+        </p>
       </Section>
 
       {/* AWS Bedrock */}

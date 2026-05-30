@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Sparkles, AlertTriangle, Search, X, Loader2, CheckCircle2 } from "lucide-react";
+import { Sparkles, AlertTriangle, Search, X, Loader2, CheckCircle2, Network } from "lucide-react";
+import { WikiGraph } from "./WikiGraph";
 import { useWikiStore } from "../../stores/wiki";
 import { useNotesStore } from "../../stores/notes";
 import { useTaskStore } from "../../stores/tasks";
@@ -29,6 +30,7 @@ export function WikiView() {
   const bedrockReady = !!(cfg.profile && cfg.region && cfg.modelId);
 
   const [panel, setPanel] = useState<PanelMode>("none");
+  const [graphView, setGraphView] = useState(false);
   const [ingestProgress, setIngestProgress] = useState<IngestProgress | null>(null);
   const [queryText, setQueryText] = useState("");
   const [queryAnswer, setQueryAnswer] = useState<{ answer: string; citations: string[] } | null>(null);
@@ -140,6 +142,13 @@ export function WikiView() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Wiki toolbar */}
         <div className="flex items-center gap-2 px-5 py-2.5 border-b border-gray-200 bg-white shrink-0">
+          <button
+            onClick={() => setGraphView((v) => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors
+              ${graphView ? "bg-gray-700 text-white border-gray-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+          >
+            <Network size={12} /> {graphView ? "Pages" : "Graph"}
+          </button>
           <div className="flex-1" />
           {bedrockReady && (
             <>
@@ -288,8 +297,14 @@ export function WikiView() {
           </div>
         )}
 
-        {/* Page detail */}
-        <WikiPageDetail />
+        {/* Page detail or graph */}
+        {graphView ? (
+          <div className="flex-1 relative overflow-hidden">
+            <WikiGraph />
+          </div>
+        ) : (
+          <WikiPageDetail />
+        )}
       </div>
     </div>
   );

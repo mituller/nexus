@@ -118,11 +118,13 @@ export interface AppSettings {
   userName: string;
   userEmail: string;
   timezone: string;
+  darkMode: boolean;
   icalFeeds: ICalFeed[];
   // GitLab
   gitlabUrl: string;
   gitlabToken: string;
   gitlabProjectFilters: string;
+  gitlabDefaultProjectId: string;
   // AWS Bedrock
   bedrockProfile: string;
   bedrockRegion: string;
@@ -133,10 +135,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   userName: "",
   userEmail: "",
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  darkMode: false,
   icalFeeds: [],
   gitlabUrl: "https://gitlab.com",
   gitlabToken: "",
   gitlabProjectFilters: "",
+  gitlabDefaultProjectId: "",
   bedrockProfile: "freshservice-bedrock",
   bedrockRegion: "us-east-1",
   bedrockModelId: "us.anthropic.claude-sonnet-4-6",

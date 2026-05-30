@@ -1,31 +1,33 @@
-import { LayoutDashboard, CheckSquare, StickyNote, BookOpen, CalendarDays, Settings, Search } from "lucide-react";
+import { LayoutDashboard, CheckSquare, StickyNote, BookOpen, CalendarDays, Settings, Search, Zap, CalendarRange } from "lucide-react";
 
-type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings";
+type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly";
 
 interface SidebarProps {
   current: View;
   onChange: (v: View) => void;
   onSearch: () => void;
+  onCapture: () => void;
 }
 
 const nav: { id: View; icon: React.ReactNode; label: string }[] = [
   { id: "dashboard", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
   { id: "tasks", icon: <CheckSquare size={18} />, label: "Tasks" },
   { id: "calendar", icon: <CalendarDays size={18} />, label: "Calendar" },
+  { id: "weekly", icon: <CalendarRange size={18} />, label: "Week Ahead" },
   { id: "notes", icon: <StickyNote size={18} />, label: "Notes" },
   { id: "wiki", icon: <BookOpen size={18} />, label: "Wiki" },
   { id: "settings", icon: <Settings size={18} />, label: "Settings" },
 ];
 
-export function Sidebar({ current, onChange, onSearch }: SidebarProps) {
+export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps) {
   return (
     <aside className="w-52 shrink-0 bg-gray-900 flex flex-col h-full">
       <div className="px-4 py-5 border-b border-gray-700">
         <span className="text-white font-semibold text-lg tracking-tight">Nexus</span>
       </div>
 
-      {/* Search button */}
-      <div className="px-2 pt-3 pb-1">
+      {/* Search + Quick Capture */}
+      <div className="px-2 pt-3 pb-1 space-y-1">
         <button
           onClick={onSearch}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-500 bg-gray-800 hover:bg-gray-700 hover:text-gray-300 transition-colors"
@@ -33,6 +35,14 @@ export function Sidebar({ current, onChange, onSearch }: SidebarProps) {
           <Search size={14} />
           <span className="flex-1 text-left">Search…</span>
           <kbd className="text-xs text-gray-600 border border-gray-700 rounded px-1">⌘K</kbd>
+        </button>
+        <button
+          onClick={onCapture}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-500 bg-gray-800 hover:bg-gray-700 hover:text-gray-300 transition-colors"
+        >
+          <Zap size={14} />
+          <span className="flex-1 text-left">Quick capture</span>
+          <kbd className="text-xs text-gray-600 border border-gray-700 rounded px-1">⇧⌘N</kbd>
         </button>
       </div>
 

@@ -1,11 +1,14 @@
 import { useState, useMemo, memo } from "react";
-import { Plus, Trash2, CheckCircle2, Circle, ExternalLink, GitBranch } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, ExternalLink, GitBranch, Send } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitLabStore } from "../../stores/gitlab";
+import { useSettingsStore } from "../../stores/settings";
 import { Task } from "../../types";
-import { GitLabIssue } from "../../services/gitlab";
+import { GitLabIssue, GitLabMR } from "../../services/gitlab";
+import { createGitLabIssue } from "../../services/gitlabWrite";
 import { TaskForm } from "./TaskForm";
+import { open as openUrl } from "@tauri-apps/plugin-shell";
 
 const PRIORITY_ORDER: Record<Task["priority"], number> = { high: 0, medium: 1, low: 2 };
 
@@ -24,7 +27,7 @@ const GITLAB_PRIORITY_COLOR: Record<NonNullable<GitLabIssue["priority"]>, string
 
 export function TaskList() {
   const { tasks, complete, remove, update } = useTaskStore();
-  const { issues, connected: gitlabConnected, openIssue } = useGitLabStore();
+  const { issues, mrs, connected: gitlabConnected, openIssue } = useGitLabStore();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<"open" | "all">("open");
 
@@ -97,6 +100,21 @@ export function TaskList() {
           </div>
         </div>
       )}
+
+      {/* GitLab MRs */}
+      {gitlabConnected && mrs.length > 0 && (
+        <div className="mt-8">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+            <GitBranch size={13} />
+            GitLab — My Merge Requests ({mrs.length})
+          </h2>
+          <div className="space-y-1">
+            {mrs.map((mr) => (
+              <MRRow key={mr.id} mr={mr} onOpen={openIssue} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -113,6 +131,27 @@ interface TaskRowProps {
 const TaskRow = memo(function TaskRow({ task, onComplete, onDelete }: TaskRowProps) {
   const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== "done";
   const isDone = task.status === "done";
+  const { settings } = useSettingsStore();
+  const [creating, setCreating] = useState(false);
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+
+  async function handleCreateIssue() {
+    if (!settings.gitlabToken || !settings.gitlabDefaultProjectId) return;
+    setCreating(true);
+    try {
+      const issue = await createGitLabIssue(
+        settings.gitlabUrl, settings.gitlabToken,
+        settings.gitlabDefaultProjectId,
+        task.title, task.description, task.dueDate,
+        task.tags
+      );
+      setCreatedUrl(issue.webUrl);
+    } catch (e) {
+      console.error("Failed to create GitLab issue:", e);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <div className={`group flex items-start gap-3 px-4 py-3 bg-white rounded-lg border transition-colors
@@ -145,12 +184,26 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete }: TaskRowPro
           )}
         </div>
       </div>
-      <button
-        onClick={() => onDelete(task.id)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500"
-      >
-        <Trash2 size={14} />
-      </button>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        {settings.gitlabDefaultProjectId && settings.gitlabToken && !createdUrl && (
+          <button
+            onClick={handleCreateIssue}
+            disabled={creating}
+            title="Create GitLab issue"
+            className="text-gray-300 hover:text-orange-500 transition-colors"
+          >
+            {creating ? <Send size={13} className="animate-pulse" /> : <Send size={13} />}
+          </button>
+        )}
+        {createdUrl && (
+          <button onClick={() => openUrl(createdUrl)} title="Open in GitLab" className="text-orange-500">
+            <ExternalLink size={13} />
+          </button>
+        )}
+        <button onClick={() => onDelete(task.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+          <Trash2 size={14} />
+        </button>
+      </div>
     </div>
   );
 });
@@ -204,6 +257,32 @@ const GitLabRow = memo(function GitLabRow({ issue, onOpen }: GitLabRowProps) {
       </div>
 
       <ExternalLink size={13} className="shrink-0 text-gray-300 group-hover:text-gray-500 mt-0.5 transition-colors" />
+    </button>
+  );
+});
+
+// ─── MR row ───────────────────────────────────────────────────────────────────
+
+const MRRow = memo(function MRRow({ mr, onOpen }: { mr: GitLabMR; onOpen: (url: string) => void }) {
+  return (
+    <button
+      onClick={() => onOpen(mr.webUrl)}
+      className="group w-full flex items-start gap-3 px-4 py-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors text-left"
+    >
+      <GitBranch size={16} className="mt-0.5 shrink-0 text-purple-400" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {mr.isDraft && <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-xs shrink-0">Draft</span>}
+          {mr.hasConflicts && <span className="px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-xs shrink-0">Conflicts</span>}
+          <p className="text-sm font-medium text-gray-800 truncate">{mr.title}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+          <span className="text-xs text-gray-400">{mr.projectName} !{mr.iid}</span>
+          <span className="text-xs text-gray-400 font-mono truncate max-w-32">{mr.sourceBranch}</span>
+          {mr.milestone && <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">{mr.milestone}</span>}
+        </div>
+      </div>
+      <ExternalLink size={13} className="shrink-0 text-gray-300 group-hover:text-purple-400 mt-0.5 transition-colors" />
     </button>
   );
 });

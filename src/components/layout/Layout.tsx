@@ -6,24 +6,30 @@ import { CalendarView } from "../calendar/CalendarView";
 import { Settings } from "../settings/Settings";
 import { NotesView } from "../notes/NotesView";
 import { WikiView } from "../wiki/WikiView";
+import { WeeklyPlanView } from "../planning/WeeklyPlanView";
 import { SearchModal } from "../ui/SearchModal";
+import { QuickCapture } from "../ui/QuickCapture";
 import { useNotesStore } from "../../stores/notes";
 import { useWikiStore } from "../../stores/wiki";
 
-type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings";
+type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly";
 
 export function Layout() {
   const [view, setView] = useState<View>("dashboard");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
   const { setActive: setActiveNote } = useNotesStore();
   const { setActive: setActiveWikiPage } = useWikiStore();
 
-  // Cmd+K / Ctrl+K to open search
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearchOpen((v) => !v);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "N") {
+        e.preventDefault();
+        setCaptureOpen((v) => !v);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -31,32 +37,30 @@ export function Layout() {
   }, []);
 
   function handleSearchNavigate(type: "note" | "task" | "wiki", id: string) {
-    if (type === "note") {
-      setView("notes");
-      setActiveNote(id);
-    } else if (type === "task") {
-      setView("tasks");
-    } else if (type === "wiki") {
-      setView("wiki");
-      setActiveWikiPage(id);
-    }
+    if (type === "note") { setView("notes"); setActiveNote(id); }
+    else if (type === "task") { setView("tasks"); }
+    else if (type === "wiki") { setView("wiki"); setActiveWikiPage(id); }
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar current={view} onChange={setView} onSearch={() => setSearchOpen(true)} />
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+      <Sidebar current={view} onChange={setView} onSearch={() => setSearchOpen(true)} onCapture={() => setCaptureOpen(true)} />
       <main className="flex-1 overflow-y-auto flex flex-col">
         {view === "dashboard" && <Dashboard />}
         {view === "tasks" && <TaskList />}
-        {view === "calendar" && <CalendarView />}
+        {view === "calendar" && <CalendarView onEventNoteRequest={() => setView("notes")} />}
         {view === "notes" && <NotesView />}
         {view === "wiki" && <WikiView />}
+        {view === "weekly" && <WeeklyPlanView />}
         {view === "settings" && <Settings />}
       </main>
       {searchOpen && (
-        <SearchModal
-          onClose={() => setSearchOpen(false)}
-          onNavigate={handleSearchNavigate}
+        <SearchModal onClose={() => setSearchOpen(false)} onNavigate={handleSearchNavigate} />
+      )}
+      {captureOpen && (
+        <QuickCapture
+          onClose={() => setCaptureOpen(false)}
+          onNavigate={(v) => setView(v)}
         />
       )}
     </div>

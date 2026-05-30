@@ -6,11 +6,12 @@ import { useCalendarStore } from "./stores/calendar";
 import { useGitLabStore } from "./stores/gitlab";
 import { useNotesStore } from "./stores/notes";
 import { useWikiStore } from "./stores/wiki";
+import { scheduleMeetingNotifications, notifyOverdueTasks } from "./services/notifications";
 
 export default function App() {
   const { load: loadSettings, settings, loaded } = useSettingsStore();
-  const { load: loadTasks } = useTaskStore();
-  const { fetchEvents, generateBriefing } = useCalendarStore();
+  const { load: loadTasks, tasks } = useTaskStore();
+  const { fetchEvents, generateBriefing, todayEvents } = useCalendarStore();
   const { fetch: fetchGitLab } = useGitLabStore();
   const { load: loadNotes } = useNotesStore();
   const { load: loadWiki } = useWikiStore();
@@ -22,6 +23,13 @@ export default function App() {
     loadWiki();
   }, [loadSettings, loadTasks]);
 
+  // Apply dark mode class to <html>
+  useEffect(() => {
+    const html = document.documentElement;
+    if (settings.darkMode) html.classList.add("dark");
+    else html.classList.remove("dark");
+  }, [settings.darkMode]);
+
   useEffect(() => {
     if (!loaded) return;
 
@@ -32,7 +40,17 @@ export default function App() {
     if (settings.gitlabToken && settings.gitlabUrl) {
       fetchGitLab();
     }
-  }, [loaded, settings, fetchEvents, generateBriefing, fetchGitLab]);
+
+    // Notify on startup if there are overdue tasks
+    notifyOverdueTasks(tasks).catch(() => {});
+  }, [loaded, settings, fetchEvents, generateBriefing, fetchGitLab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-schedule meeting notifications whenever today's events change
+  useEffect(() => {
+    if (todayEvents.length > 0) {
+      scheduleMeetingNotifications(todayEvents).catch(() => {});
+    }
+  }, [todayEvents]);
 
   return <Layout />;
 }

@@ -1,9 +1,10 @@
 import { create } from "zustand";
-import { GitLabIssue, GitLabUser, getAssignedIssues, getGitLabUser } from "../services/gitlab";
+import { GitLabIssue, GitLabMR, GitLabUser, getAssignedIssues, getOpenMergeRequests, getGitLabUser } from "../services/gitlab";
 import { useSettingsStore } from "./settings";
 
 interface GitLabStore {
   issues: GitLabIssue[];
+  mrs: GitLabMR[];
   user: GitLabUser | null;
   loading: boolean;
   connected: boolean;
@@ -14,6 +15,7 @@ interface GitLabStore {
 
 export const useGitLabStore = create<GitLabStore>((set) => ({
   issues: [],
+  mrs: [],
   user: null,
   loading: false,
   connected: false,
@@ -25,11 +27,12 @@ export const useGitLabStore = create<GitLabStore>((set) => ({
 
     set({ loading: true, error: null });
     try {
-      const [user, issues] = await Promise.all([
+      const [user, issues, mrs] = await Promise.all([
         getGitLabUser(settings.gitlabUrl, settings.gitlabToken),
         getAssignedIssues(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters),
+        getOpenMergeRequests(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters),
       ]);
-      set({ user, issues, connected: true, loading: false });
+      set({ user, issues, mrs, connected: true, loading: false });
     } catch (e) {
       set({ error: String(e), connected: false, loading: false });
     }

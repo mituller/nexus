@@ -1,8 +1,8 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Video } from "lucide-react";
-import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { format, startOfWeek, addDays, isToday, parseISO, differenceInMinutes } from "date-fns";
 import { CalendarEvent } from "../../types";
+import { EventPopup } from "./EventPopup";
 
 const HOUR_HEIGHT = 64; // px per hour
 const START_HOUR = 6;
@@ -111,12 +111,14 @@ function eventPositionStyle(
 interface WeekViewProps {
   anchor: Date;
   events: CalendarEvent[];
+  onEventNoteRequest?: (event: CalendarEvent) => void;
 }
 
-export function WeekView({ anchor, events }: WeekViewProps) {
+export function WeekView({ anchor, events, onEventNoteRequest }: WeekViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const weekStart = startOfWeek(anchor, { weekStartsOn: 0 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const [popup, setPopup] = useState<{ event: CalendarEvent; rect: DOMRect } | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -132,6 +134,7 @@ export function WeekView({ anchor, events }: WeekViewProps) {
   }
 
   return (
+    <>
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* Day headers */}
       <div className="flex border-b border-gray-200 bg-white shrink-0">
@@ -203,8 +206,12 @@ export function WeekView({ anchor, events }: WeekViewProps) {
                   return (
                     <div
                       key={event.id}
-                      className={`absolute rounded border-l-2 overflow-hidden transition-all select-none ${event.teamsLink ? "cursor-pointer hover:brightness-95" : "cursor-default"}`}
-                      onClick={() => event.teamsLink && openUrl(event.teamsLink)}
+                      className="absolute rounded border-l-2 overflow-hidden transition-all select-none cursor-pointer hover:brightness-95"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setPopup({ event, rect });
+                      }}
                       style={eventPositionStyle(event, column, totalColumns)}
                       title={`${event.title}\n${format(start, "h:mm a")} – ${format(end, "h:mm a")}${event.feedLabel ? `\n${event.feedLabel}` : ""}`}
                     >
@@ -237,6 +244,16 @@ export function WeekView({ anchor, events }: WeekViewProps) {
         </div>
       </div>
     </div>
+
+    {popup && (
+      <EventPopup
+        event={popup.event}
+        anchorRect={popup.rect}
+        onClose={() => setPopup(null)}
+        onAddNotes={(ev) => { setPopup(null); onEventNoteRequest?.(ev); }}
+      />
+    )}
+    </>
   );
 }
 

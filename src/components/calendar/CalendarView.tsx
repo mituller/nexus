@@ -4,6 +4,8 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, sub
 import { CalendarEvent } from "../../types";
 import { useCalendarStore } from "../../stores/calendar";
 import { useSettingsStore } from "../../stores/settings";
+import { useNotesStore } from "../../stores/notes";
+import { buildMeetingNoteTemplate } from "../../services/meetingNotes";
 import { WeekView } from "./WeekView";
 import { MonthView } from "./MonthView";
 
@@ -25,7 +27,26 @@ function FeedLegend() {
 
 type ViewMode = "week" | "month";
 
-export function CalendarView() {
+interface CalendarViewProps {
+  onEventNoteRequest?: (eventId: string, eventTitle: string) => void;
+}
+
+export function CalendarView({ onEventNoteRequest }: CalendarViewProps) {
+  const { create: createNote, setActive: setActiveNote } = useNotesStore();
+
+  async function handleEventNote(event: CalendarEvent) {
+    const { title, content } = buildMeetingNoteTemplate(event);
+    const note = await createNote({
+      title,
+      content,
+      tags: ["meeting"],
+      sourceType: "manual",
+      linkedEventId: event.id,
+      linkedEventTitle: event.title,
+    });
+    setActiveNote(note.id);
+    onEventNoteRequest?.(event.id, event.title);
+  }
   const [mode, setMode] = useState<ViewMode>("week");
   const [anchor, setAnchor] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -121,7 +142,7 @@ export function CalendarView() {
           <p className="text-sm">Connect a calendar in Settings to get started.</p>
         </div>
       ) : mode === "week" ? (
-        <WeekView anchor={anchor} events={events} />
+        <WeekView anchor={anchor} events={events} onEventNoteRequest={handleEventNote} />
       ) : (
         <MonthView anchor={anchor} events={events} />
       )}
