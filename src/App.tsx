@@ -11,7 +11,7 @@ import { scheduleMeetingNotifications, notifyOverdueTasks } from "./services/not
 export default function App() {
   const { load: loadSettings, settings, loaded } = useSettingsStore();
   const { load: loadTasks, tasks } = useTaskStore();
-  const { fetchEvents, generateBriefing, todayEvents } = useCalendarStore();
+  const { fetchEvents, generateBriefing, prefetchCurrentWeek, todayEvents } = useCalendarStore();
   const { fetch: fetchGitLab } = useGitLabStore();
   const { load: loadNotes } = useNotesStore();
   const { load: loadWiki } = useWikiStore();
@@ -35,6 +35,8 @@ export default function App() {
 
     if (settings.icalFeeds.some((f) => f.enabled && f.url)) {
       fetchEvents().then(() => generateBriefing());
+      // Pre-fetch full current week in background so Calendar view opens instantly
+      prefetchCurrentWeek();
     }
 
     if (settings.gitlabToken && settings.gitlabUrl) {

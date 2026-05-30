@@ -5,7 +5,14 @@ import { generateDailyBriefing, hasBedrockConfig } from "../services/claude";
 import { getCachedBriefing, saveCachedBriefing } from "../services/store";
 import { useSettingsStore } from "./settings";
 import { useTaskStore } from "./tasks";
-import { isToday, startOfDay, endOfDay, addDays, format } from "date-fns";
+import { isToday, startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, format } from "date-fns";
+
+const STALE_MS = 15 * 60 * 1000; // 15 minutes
+
+interface CachedRange {
+  events: CalendarEvent[];
+  fetchedAt: number;
+}
 
 interface CalendarStore {
   todayEvents: CalendarEvent[];
@@ -15,9 +22,16 @@ interface CalendarStore {
   loadingBriefing: boolean;
   connected: boolean;
   lastFetched: Date | null;
+  rangeCache: Record<string, CachedRange>;
   fetchEvents: () => Promise<void>;
+  prefetchCurrentWeek: () => Promise<void>;
   fetchEventsForRange: (start: Date, end: Date) => Promise<CalendarEvent[]>;
+  getCachedRange: (start: Date, end: Date) => CalendarEvent[] | null;
   generateBriefing: (force?: boolean) => Promise<void>;
+}
+
+function rangeKey(start: Date, end: Date): string {
+  return `${format(start, "yyyy-MM-dd")}::${format(end, "yyyy-MM-dd")}`;
 }
 
 function mergeAndSort(events: CalendarEvent[]): CalendarEvent[] {
@@ -46,6 +60,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   loadingBriefing: false,
   connected: false,
   lastFetched: null,
+  rangeCache: {},
 
   fetchEvents: async () => {
     const { settings } = useSettingsStore.getState();
@@ -57,7 +72,6 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       const now = new Date();
       const all = await fetchAllFeeds(startOfDay(now), endOfDay(addDays(now, 1)));
 
-      // Use local date strings — toISOString() gives UTC which is wrong after ~6pm CT
       const todayStr = format(now, "yyyy-MM-dd");
       const tomorrowStr = format(addDays(now, 1), "yyyy-MM-dd");
       const localDate = (iso: string) => format(new Date(iso), "yyyy-MM-dd");
@@ -75,8 +89,63 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     }
   },
 
+  // Pre-fetch the full current week in the background at startup
+  prefetchCurrentWeek: async () => {
+    const { settings } = useSettingsStore.getState();
+    if (!settings.icalFeeds.some((f) => f.enabled && f.url)) return;
+
+    const now = new Date();
+    const start = startOfWeek(now, { weekStartsOn: 0 });
+    const end = endOfWeek(now, { weekStartsOn: 0 });
+    const key = rangeKey(start, end);
+    const cached = get().rangeCache[key];
+
+    // Skip if already fresh
+    if (cached && Date.now() - cached.fetchedAt < STALE_MS) return;
+
+    try {
+      const events = mergeAndSort(await fetchAllFeeds(start, end));
+      set((state) => ({
+        rangeCache: { ...state.rangeCache, [key]: { events, fetchedAt: Date.now() } },
+        connected: true,
+      }));
+    } catch (e) {
+      console.error("Failed to prefetch current week:", e);
+    }
+  },
+
+  // Returns cached events instantly if fresh; always fetches in background if stale/missing
   fetchEventsForRange: async (start: Date, end: Date): Promise<CalendarEvent[]> => {
-    return mergeAndSort(await fetchAllFeeds(start, end));
+    const key = rangeKey(start, end);
+    const cached = get().rangeCache[key];
+    const fresh = cached && Date.now() - cached.fetchedAt < STALE_MS;
+
+    if (fresh) {
+      // Return cached immediately; silently refresh in background for next call
+      setTimeout(async () => {
+        try {
+          const events = mergeAndSort(await fetchAllFeeds(start, end));
+          set((state) => ({
+            rangeCache: { ...state.rangeCache, [key]: { events, fetchedAt: Date.now() } },
+          }));
+        } catch { /* ignore background refresh errors */ }
+      }, 0);
+      return cached.events;
+    }
+
+    // No fresh cache — fetch now
+    const events = mergeAndSort(await fetchAllFeeds(start, end));
+    set((state) => ({
+      rangeCache: { ...state.rangeCache, [key]: { events, fetchedAt: Date.now() } },
+      connected: true,
+    }));
+    return events;
+  },
+
+  // Synchronous cache lookup — used by CalendarView for instant display
+  getCachedRange: (start: Date, end: Date): CalendarEvent[] | null => {
+    const cached = get().rangeCache[rangeKey(start, end)];
+    return cached ? cached.events : null;
   },
 
   generateBriefing: async (force = false) => {
@@ -85,16 +154,10 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       if (cached && isToday(new Date(cached.generatedAt))) {
         try {
           const parsed = JSON.parse(cached.briefing) as DailyBriefing;
-          // Discard stale briefing: had 0 meetings but we now have events, or was generated over 4 hours ago
           const currentEvents = get().todayEvents;
           const ageHours = (Date.now() - new Date(cached.generatedAt).getTime()) / 3_600_000;
           const stale = (parsed.stats.meetingsToday === 0 && currentEvents.length > 0) || ageHours > 4;
-          if (stale) {
-            // fall through to regenerate
-          } else {
-            set({ briefing: parsed });
-            return;
-          }
+          if (!stale) { set({ briefing: parsed }); return; }
         } catch { /* regenerate */ }
       }
     }
@@ -108,13 +171,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
 
     set({ loadingBriefing: true });
     try {
-      const briefing = await generateDailyBriefing(
-        cfg,
-        settings.userName || "there",
-        todayEvents,
-        tomorrowEvents,
-        tasks
-      );
+      const briefing = await generateDailyBriefing(cfg, settings.userName || "there", todayEvents, tomorrowEvents, tasks);
       set({ briefing });
       await saveCachedBriefing(JSON.stringify(briefing));
     } catch (e) {

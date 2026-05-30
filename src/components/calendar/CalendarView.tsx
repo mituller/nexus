@@ -51,17 +51,31 @@ export function CalendarView({ onEventNoteRequest }: CalendarViewProps) {
   const [anchor, setAnchor] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const { fetchEventsForRange, connected } = useCalendarStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const { fetchEventsForRange, getCachedRange, connected } = useCalendarStore();
 
   const loadEvents = useCallback(async (start: Date, end: Date) => {
-    setLoading(true);
-    try {
-      const evts = await fetchEventsForRange(start, end);
-      setEvents(evts);
-    } finally {
+    // Show cached data instantly if available — no visible delay
+    const cached = getCachedRange(start, end);
+    if (cached) {
+      setEvents(cached);
       setLoading(false);
+      // Silently refresh in background (fetchEventsForRange handles this internally)
+      setRefreshing(true);
+      fetchEventsForRange(start, end)
+        .then((fresh) => setEvents(fresh))
+        .finally(() => setRefreshing(false));
+    } else {
+      // Nothing cached — show loading and wait for first fetch
+      setLoading(true);
+      try {
+        const evts = await fetchEventsForRange(start, end);
+        setEvents(evts);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [fetchEventsForRange]);
+  }, [fetchEventsForRange, getCachedRange]);
 
   useEffect(() => {
     if (!connected) return;
@@ -120,6 +134,7 @@ export function CalendarView({ onEventNoteRequest }: CalendarViewProps) {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300 min-w-40 justify-center">
             {loading && <span className="text-xs text-gray-400 dark:text-gray-500">Loading…</span>}
+            {!loading && refreshing && <span className="text-xs text-gray-300 dark:text-gray-600">Refreshing…</span>}
             {headerLabel()}
           </div>
           <button onClick={today} className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-500">Today</button>
