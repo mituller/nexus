@@ -19,7 +19,7 @@ export function GitLabSection() {
     <section>
       <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
         <GitBranch size={13} />
-        GitLab — Open Issues
+        GitLab — Open Items
         {user && <span className="normal-case font-normal text-gray-400 dark:text-gray-500">(@{user.username})</span>}
       </h2>
 
@@ -50,6 +50,7 @@ export function GitLabSection() {
                 <p className="text-sm text-gray-800 dark:text-gray-100 font-medium truncate">{issue.title}</p>
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   <span className="text-xs text-gray-400 dark:text-gray-500">{issue.projectName} #{issue.iid}</span>
+                  <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs capitalize">{issue.issueType}</span>
                   {issue.priority && (
                     <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${PRIORITY_COLORS[issue.priority]}`}>
                       {issue.priority}

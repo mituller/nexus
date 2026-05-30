@@ -85,7 +85,7 @@ export function TaskList() {
         <div className="mt-8">
           <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
             <GitBranch size={13} />
-            GitLab — Open Issues ({issues.length})
+            GitLab — Open Items ({issues.length})
           </h2>
           <div className="space-y-1">
             {issues.map((issue) => (
@@ -237,6 +237,7 @@ const GitLabRow = memo(function GitLabRow({ issue, onOpen }: GitLabRowProps) {
         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{issue.title}</p>
         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
           <span className="text-xs text-gray-400 dark:text-gray-500">{issue.projectName} #{issue.iid}</span>
+            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs capitalize">{issue.issueType}</span>
           {issue.priority && (
             <span className={`text-xs font-medium ${GITLAB_PRIORITY_COLOR[issue.priority]}`}>
               ● {issue.priority}

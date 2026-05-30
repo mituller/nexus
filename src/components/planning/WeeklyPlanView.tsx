@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, Calendar, CheckSquare, GitBranch, Sparkles } from "lucide-react";
+import { RefreshCw, Calendar, CheckSquare, Sparkles, GitBranch, ExternalLink } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, parseISO, isBefore } from "date-fns";
 import { useCalendarStore } from "../../stores/calendar";
 import { useTaskStore } from "../../stores/tasks";
-import { useGitLabStore } from "../../stores/gitlab";
 import { useSettingsStore } from "../../stores/settings";
 import { MeetingCard } from "../dashboard/MeetingCard";
 import { callClaude } from "../../services/bedrock";
-import { CalendarEvent } from "../../types";
+import { CalendarEvent, Task } from "../../types";
+import { useGitLabStore } from "../../stores/gitlab";
 
 export function WeeklyPlanView() {
   const { settings } = useSettingsStore();
   const { fetchEventsForRange } = useCalendarStore();
   const { tasks } = useTaskStore();
-  const { issues, mrs } = useGitLabStore();
+  const { issues, openIssue } = useGitLabStore();
 
   const [weekEvents, setWeekEvents] = useState<CalendarEvent[]>([]);
   const [narrative, setNarrative] = useState("");
@@ -60,7 +60,7 @@ ${eventsByDay}
 OPEN TASKS: ${openTasks.length} total, ${overdueCount} overdue
 TOP TASKS: ${openTasks.slice(0, 5).map((t) => `${t.title} [${t.priority}]`).join(", ")}
 
-GITLAB: ${issues.length} open issues, ${mrs.length} open MRs
+TASKS DUE THIS WEEK: ${thisWeekTasks.length}
 
 Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, any scheduling conflicts or prep needed. Do NOT start with a greeting. Flowing prose, no bullet points.`;
 
@@ -146,45 +146,98 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
           })}
         </div>
 
-        {/* Right: tasks + gitlab */}
-        <div className="col-span-2 space-y-6">
-          {thisWeekTasks.length > 0 && (
+        {/* Right: tasks */}
+        <div className="col-span-2 space-y-5">
+          {openTasks.length === 0 ? (
+            <p className="text-sm text-gray-400 dark:text-gray-600 pt-6 text-center">No open tasks.</p>
+          ) : (
+            <>
+              {thisWeekTasks.length > 0 && (
+                <section>
+                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
+                    <CheckSquare size={13} /> Due This Week ({thisWeekTasks.length})
+                  </h2>
+                  <div className="space-y-1">
+                    {thisWeekTasks.map((t) => (
+                      <TaskRow key={t.id} task={t} highlight />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {openTasks.filter(t => !thisWeekTasks.includes(t)).length > 0 && (
+                <section>
+                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
+                    <CheckSquare size={13} /> Other Open Tasks
+                  </h2>
+                  <div className="space-y-1">
+                    {openTasks.filter(t => !thisWeekTasks.includes(t)).map((t) => (
+                      <TaskRow key={t.id} task={t} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+          {issues.length > 0 && (
             <section>
               <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
-                <CheckSquare size={13} /> Due This Week ({thisWeekTasks.length})
+                <GitBranch size={13} /> GitLab Items ({issues.length})
               </h2>
               <div className="space-y-1">
-                {thisWeekTasks.map((t) => (
-                  <div key={t.id} className="flex items-start gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm">
-                    <span className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${t.priority === "high" ? "bg-red-400" : t.priority === "medium" ? "bg-orange-400" : "bg-gray-300"}`} />
+                {issues.map((issue) => (
+                  <button
+                    key={issue.id}
+                    onClick={() => openIssue(issue.webUrl)}
+                    className="group w-full flex items-start gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-left hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                  >
+                    <GitBranch size={13} className="mt-0.5 shrink-0 text-orange-400" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 dark:text-gray-100 truncate">{t.title}</p>
-                      {t.dueDate && <p className="text-xs text-gray-400 dark:text-gray-500">Due {format(parseISO(t.dueDate), "EEE MMM d")}</p>}
+                      <p className="text-gray-800 dark:text-gray-100 truncate">{issue.title}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{issue.projectName} #{issue.iid}</span>
+                        <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs capitalize">{issue.issueType}</span>
+                        {issue.iteration && <span className="text-xs text-blue-500">⟳ {issue.iteration}</span>}
+                        {issue.dueDate && <span className="text-xs text-gray-400 dark:text-gray-500">· Due {format(parseISO(issue.dueDate), "MMM d")}</span>}
+                      </div>
                     </div>
-                  </div>
+                    <ExternalLink size={11} className="shrink-0 text-gray-300 group-hover:text-gray-500 mt-0.5 transition-colors" />
+                  </button>
                 ))}
               </div>
             </section>
           )}
-
-          {(issues.length > 0 || mrs.length > 0) && (
-            <section>
-              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
-                <GitBranch size={13} /> GitLab
-              </h2>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-500">Open issues</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{issues.length}</span>
-                </div>
-                <div className="flex justify-between px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-500">Open MRs</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{mrs.length}</span>
-                </div>
-              </div>
-            </section>
-          )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskRow({ task, highlight = false }: { task: Task; highlight?: boolean }) {
+  const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date());
+  const priorityDot = task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-orange-400" : "bg-gray-300 dark:bg-gray-600";
+
+  return (
+    <div className={`flex items-start gap-2 px-3 py-2 rounded-lg border text-sm
+      ${highlight
+        ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
+      <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${priorityDot}`} />
+      <div className="flex-1 min-w-0">
+        <p className="text-gray-800 dark:text-gray-100 truncate">{task.title}</p>
+        {task.dueDate && (
+          <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
+            {isOverdue ? "Overdue · " : "Due "}
+            {format(parseISO(task.dueDate), "EEE MMM d")}
+          </p>
+        )}
+        {task.tags.length > 0 && (
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {task.tags.slice(0, 3).map(tag => (
+              <span key={tag} className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded">{tag}</span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

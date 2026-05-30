@@ -14,6 +14,7 @@ export interface GitLabIssue {
   iteration?: string;
   dueDate?: string;
   priority?: "critical" | "high" | "medium" | "low";
+  issueType: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -131,6 +132,7 @@ export async function getAssignedIssues(
       iteration: formatIteration(issue.iteration as IterationRaw | null),
       dueDate: (issue.due_date as string) ?? undefined,
       priority: extractPriority(labels),
+      issueType: ((issue.issue_type ?? issue.type ?? "issue") as string).replace(/_/g, " "),
       createdAt: issue.created_at as string,
       updatedAt: issue.updated_at as string,
     };
