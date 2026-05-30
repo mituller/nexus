@@ -1,8 +1,8 @@
 import { load } from "@tauri-apps/plugin-store";
 import { format } from "date-fns";
 
-export interface DailyUsage {
-  date: string;
+export interface PeriodUsage {
+  period: string; // YYYY-MM-DD for day, YYYY-MM for month
   inputTokens: number;
   outputTokens: number;
   callCount: number;
@@ -20,40 +20,79 @@ export async function addTokenUsage(inputTokens: number, outputTokens: number): 
   try {
     const store = await getStore();
     const today = format(new Date(), "yyyy-MM-dd");
-    const existing = await store.get<DailyUsage>("token_usage");
+    const month = format(new Date(), "yyyy-MM");
 
-    if (!existing || existing.date !== today) {
-      await store.set("token_usage", { date: today, inputTokens, outputTokens, callCount: 1 });
+    // Update daily
+    const daily = await store.get<PeriodUsage>("token_usage_day");
+    if (!daily || daily.period !== today) {
+      await store.set("token_usage_day", { period: today, inputTokens, outputTokens, callCount: 1 });
     } else {
-      await store.set("token_usage", {
-        date: today,
-        inputTokens: existing.inputTokens + inputTokens,
-        outputTokens: existing.outputTokens + outputTokens,
-        callCount: existing.callCount + 1,
+      await store.set("token_usage_day", {
+        period: today,
+        inputTokens: daily.inputTokens + inputTokens,
+        outputTokens: daily.outputTokens + outputTokens,
+        callCount: daily.callCount + 1,
+      });
+    }
+
+    // Update monthly
+    const monthly = await store.get<PeriodUsage>("token_usage_month");
+    if (!monthly || monthly.period !== month) {
+      await store.set("token_usage_month", { period: month, inputTokens, outputTokens, callCount: 1 });
+    } else {
+      await store.set("token_usage_month", {
+        period: month,
+        inputTokens: monthly.inputTokens + inputTokens,
+        outputTokens: monthly.outputTokens + outputTokens,
+        callCount: monthly.callCount + 1,
       });
     }
   } catch { /* never block the main call */ }
 }
 
-export async function getDailyUsage(): Promise<DailyUsage> {
+export async function getDailyUsage(): Promise<PeriodUsage> {
   try {
     const store = await getStore();
     const today = format(new Date(), "yyyy-MM-dd");
-    const usage = await store.get<DailyUsage>("token_usage");
-    if (!usage || usage.date !== today) {
-      return { date: today, inputTokens: 0, outputTokens: 0, callCount: 0 };
+    // Support old key name for backwards compatibility
+    const usage = await store.get<PeriodUsage>("token_usage_day") ??
+                  await store.get<PeriodUsage>("token_usage");
+    if (!usage || usage.period !== today) {
+      return { period: today, inputTokens: 0, outputTokens: 0, callCount: 0 };
     }
     return usage;
   } catch {
-    return { date: format(new Date(), "yyyy-MM-dd"), inputTokens: 0, outputTokens: 0, callCount: 0 };
+    return { period: format(new Date(), "yyyy-MM-dd"), inputTokens: 0, outputTokens: 0, callCount: 0 };
   }
 }
 
-export function estimateCost(usage: DailyUsage): number {
+export async function getMonthlyUsage(): Promise<PeriodUsage> {
+  try {
+    const store = await getStore();
+    const month = format(new Date(), "yyyy-MM");
+    const usage = await store.get<PeriodUsage>("token_usage_month");
+    if (!usage || usage.period !== month) {
+      return { period: month, inputTokens: 0, outputTokens: 0, callCount: 0 };
+    }
+    return usage;
+  } catch {
+    return { period: format(new Date(), "yyyy-MM"), inputTokens: 0, outputTokens: 0, callCount: 0 };
+  }
+}
+
+export function estimateCost(usage: PeriodUsage): number {
   return (usage.inputTokens / 1_000_000) * INPUT_COST_PER_M +
          (usage.outputTokens / 1_000_000) * OUTPUT_COST_PER_M;
 }
 
 export function formatTokens(n: number): string {
-  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
+export function formatCost(cost: number): string {
+  if (cost === 0) return "$0.00";
+  if (cost < 0.01) return "<$0.01";
+  return `$${cost.toFixed(2)}`;
 }
