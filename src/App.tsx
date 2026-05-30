@@ -4,6 +4,7 @@ import { useSettingsStore } from "./stores/settings";
 import { useTaskStore } from "./stores/tasks";
 import { useCalendarStore } from "./stores/calendar";
 import { useGitLabStore } from "./stores/gitlab";
+import { useFreshserviceStore } from "./stores/freshservice";
 import { useNotesStore } from "./stores/notes";
 import { useWikiStore } from "./stores/wiki";
 import { scheduleMeetingNotifications, notifyOverdueTasks } from "./services/notifications";
@@ -13,6 +14,7 @@ export default function App() {
   const { load: loadTasks, tasks } = useTaskStore();
   const { fetchEvents, generateBriefing, prefetchCurrentWeek, todayEvents } = useCalendarStore();
   const { fetch: fetchGitLab } = useGitLabStore();
+  const { fetch: fetchTickets } = useFreshserviceStore();
   const { load: loadNotes } = useNotesStore();
   const { load: loadWiki } = useWikiStore();
 
@@ -41,6 +43,10 @@ export default function App() {
 
     if (settings.gitlabToken && settings.gitlabUrl) {
       fetchGitLab();
+    }
+
+    if (settings.freshserviceUrl && settings.freshserviceApiKey) {
+      fetchTickets();
     }
 
     // Notify on startup if there are overdue tasks

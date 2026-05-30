@@ -1,7 +1,8 @@
-import { LayoutDashboard, CheckSquare, StickyNote, BookOpen, CalendarDays, Settings, Search, Zap, CalendarRange } from "lucide-react";
+import { LayoutDashboard, CheckSquare, StickyNote, BookOpen, CalendarDays, Settings, Search, Zap, CalendarRange, Ticket } from "lucide-react";
 import { useTaskStore } from "../../stores/tasks";
+import { useFreshserviceStore } from "../../stores/freshservice";
 
-type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly";
+type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly" | "tickets";
 
 interface SidebarProps {
   current: View;
@@ -12,10 +13,12 @@ interface SidebarProps {
 
 export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps) {
   const openTaskCount = useTaskStore((s) => s.tasks.filter((t) => t.status !== "done").length);
+  const openTicketCount = useFreshserviceStore((s) => s.tickets.length);
 
   const nav: { id: View; icon: React.ReactNode; label: string; badge?: number }[] = [
     { id: "dashboard", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
     { id: "tasks", icon: <CheckSquare size={18} />, label: "Tasks", badge: openTaskCount || undefined },
+    { id: "tickets", icon: <Ticket size={18} />, label: "Tickets", badge: openTicketCount || undefined },
     { id: "calendar", icon: <CalendarDays size={18} />, label: "Calendar" },
     { id: "weekly", icon: <CalendarRange size={18} />, label: "Week Ahead" },
     { id: "notes", icon: <StickyNote size={18} />, label: "Notes" },

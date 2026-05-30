@@ -130,6 +130,9 @@ export interface AppSettings {
   bedrockProfile: string;
   bedrockRegion: string;
   bedrockModelId: string;
+  // Freshservice
+  freshserviceUrl: string;
+  freshserviceApiKey: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -145,6 +148,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   bedrockProfile: "freshservice-bedrock",
   bedrockRegion: "us-east-1",
   bedrockModelId: "us.anthropic.claude-sonnet-4-6",
+  freshserviceUrl: "",
+  freshserviceApiKey: "",
 };
 
 export const FEED_COLORS = [

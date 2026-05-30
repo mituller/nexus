@@ -7,12 +7,13 @@ import { Settings } from "../settings/Settings";
 import { NotesView } from "../notes/NotesView";
 import { WikiView } from "../wiki/WikiView";
 import { WeeklyPlanView } from "../planning/WeeklyPlanView";
+import { TicketsView } from "../tickets/TicketsView";
 import { SearchModal } from "../ui/SearchModal";
 import { QuickCapture } from "../ui/QuickCapture";
 import { useNotesStore } from "../../stores/notes";
 import { useWikiStore } from "../../stores/wiki";
 
-type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly";
+type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly" | "tickets";
 
 export function Layout() {
   const [view, setView] = useState<View>("dashboard");
@@ -52,6 +53,7 @@ export function Layout() {
         {view === "notes" && <NotesView />}
         {view === "wiki" && <WikiView />}
         {view === "weekly" && <WeeklyPlanView />}
+        {view === "tickets" && <TicketsView />}
         {view === "settings" && <Settings />}
       </main>
       {searchOpen && (
