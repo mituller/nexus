@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from "react";
-import { Plus, Trash2, CheckCircle2, Circle, ExternalLink, GitBranch, Send } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitLabStore } from "../../stores/gitlab";
@@ -156,12 +156,12 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete }: TaskRowPro
   return (
     <div className={`group flex items-start gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border transition-colors
       ${isDone ? "border-gray-100 dark:border-gray-700 opacity-60" : "border-gray-200 dark:border-gray-700 hover:border-gray-300"}`}>
-      <button onClick={() => onComplete(task.id)} className="mt-0.5 shrink-0">
-        {isDone
-          ? <CheckCircle2 size={18} className="text-green-500" />
-          : <Circle size={18} className="text-gray-300 hover:text-blue-500 transition-colors" />
-        }
-      </button>
+      <input
+        type="checkbox"
+        checked={isDone}
+        onChange={() => onComplete(task.id)}
+        className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+      />
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium ${isDone ? "line-through text-gray-400 dark:text-gray-500" : isOverdue ? "text-red-700" : "text-gray-800 dark:text-gray-100"}`}>
           {task.title}
