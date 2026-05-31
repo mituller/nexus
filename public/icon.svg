@@ -1,0 +1,103 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a0533"/>
+      <stop offset="100%" stop-color="#0d1b4b"/>
+    </linearGradient>
+    <radialGradient id="centerGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#9333EA"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </radialGradient>
+    <linearGradient id="lineGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="lineGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="centerGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bgGrad)"/>
+
+  <!-- Subtle inner glow at center -->
+  <circle cx="256" cy="248" r="160" fill="#7C3AED" opacity="0.07"/>
+
+  <!-- Outer node positions (7 nodes in a heptagon around center 256,248, radius 148) -->
+  <!-- Top: 256, 100 -->
+  <!-- Top-right: 381, 153 -->
+  <!-- Right: 404, 285 -->
+  <!-- Bottom-right: 326, 390 -->
+  <!-- Bottom-left: 186, 390 -->
+  <!-- Left: 108, 285 -->
+  <!-- Top-left: 131, 153 -->
+
+  <!-- Outer ring connections -->
+  <g opacity="0.35" stroke="#06B6D4" stroke-width="2" fill="none">
+    <line x1="256" y1="100" x2="381" y2="153"/>
+    <line x1="381" y1="153" x2="404" y2="285"/>
+    <line x1="404" y1="285" x2="326" y2="390"/>
+    <line x1="326" y1="390" x2="186" y2="390"/>
+    <line x1="186" y1="390" x2="108" y2="285"/>
+    <line x1="108" y1="285" x2="131" y2="153"/>
+    <line x1="131" y1="153" x2="256" y2="100"/>
+  </g>
+
+  <!-- Lines from center to outer nodes -->
+  <g filter="url(#glow)">
+    <line x1="256" y1="248" x2="256" y2="108" stroke="url(#lineGrad1)" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <line x1="256" y1="248" x2="378" y2="161" stroke="url(#lineGrad1)" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <line x1="256" y1="248" x2="398" y2="285" stroke="url(#lineGrad2)" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <line x1="256" y1="248" x2="322" y2="384" stroke="url(#lineGrad2)" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <line x1="256" y1="248" x2="190" y2="384" stroke="url(#lineGrad1)" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <line x1="256" y1="248" x2="114" y2="285" stroke="url(#lineGrad1)" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <line x1="256" y1="248" x2="134" y2="161" stroke="url(#lineGrad2)" stroke-width="2.5" stroke-dasharray="6,4"/>
+  </g>
+
+  <!-- Outer nodes -->
+  <g filter="url(#glow)">
+    <circle cx="256" cy="100" r="11" fill="#06B6D4"/>
+    <circle cx="381" cy="153" r="9" fill="#A78BFA"/>
+    <circle cx="404" cy="285" r="11" fill="#06B6D4"/>
+    <circle cx="326" cy="390" r="9" fill="#A78BFA"/>
+    <circle cx="186" cy="390" r="9" fill="#A78BFA"/>
+    <circle cx="108" cy="285" r="11" fill="#06B6D4"/>
+    <circle cx="131" cy="153" r="9" fill="#A78BFA"/>
+  </g>
+
+  <!-- Center hex glow -->
+  <circle cx="256" cy="248" r="72" fill="#7C3AED" opacity="0.18" filter="url(#centerGlow)"/>
+
+  <!-- Center hexagon (large, bold) -->
+  <polygon
+    points="256,192 309,222 309,282 256,312 203,282 203,222"
+    fill="url(#centerGrad)"
+    filter="url(#glow)"
+  />
+  <!-- Inner hex ring -->
+  <polygon
+    points="256,205 296,228 296,274 256,297 216,274 216,228"
+    fill="none"
+    stroke="#C4B5FD"
+    stroke-width="2"
+    opacity="0.45"
+  />
+  <!-- Center dot -->
+  <circle cx="256" cy="252" r="10" fill="white" opacity="0.95" filter="url(#glow)"/>
+  <circle cx="256" cy="252" r="4" fill="#7C3AED"/>
+</svg>

@@ -1,4 +1,5 @@
 import { LayoutDashboard, CheckSquare, StickyNote, BookOpen, CalendarDays, Settings, Search, Zap, CalendarRange, Ticket } from "lucide-react";
+
 import { useTaskStore } from "../../stores/tasks";
 import { useFreshserviceStore } from "../../stores/freshservice";
 
@@ -29,7 +30,7 @@ export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps
   return (
     <aside className="w-52 shrink-0 bg-gray-900 flex flex-col h-full">
       <div className="px-4 py-4 border-b border-gray-700 flex items-center gap-2.5">
-        <img src="/src/assets/icon.svg" alt="" className="w-7 h-7 shrink-0" />
+        <img src="/icon.svg" alt="" className="w-7 h-7 shrink-0" />
         <span className="text-white font-semibold text-lg tracking-tight">Nexus</span>
       </div>
 
