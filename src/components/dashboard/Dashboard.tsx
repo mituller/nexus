@@ -10,6 +10,7 @@ import { HeadsUpSection } from "./HeadsUpSection";
 import { MeetingCard } from "./MeetingCard";
 import { DashboardTaskItem } from "./DashboardTaskItem";
 import { GitLabSection } from "./GitLabSection";
+import { FreshserviceSection } from "./FreshserviceSection";
 
 export function Dashboard() {
   const { settings } = useSettingsStore();
@@ -167,6 +168,7 @@ export function Dashboard() {
           )}
 
           <GitLabSection />
+          <FreshserviceSection />
         </div>
       </div>
     </div>
