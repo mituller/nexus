@@ -27,3 +27,20 @@ export async function saveCachedBriefing(briefing: string) {
   const store = await getStore();
   await store.set("daily_briefing", { briefing, generatedAt: new Date().toISOString() });
 }
+
+export interface WeeklyNarrativeCache {
+  weekKey: string;   // Monday YYYY-MM-DD
+  narrative: string;
+  generatedAt: string;
+}
+
+export async function getCachedWeeklyNarrative(): Promise<WeeklyNarrativeCache | null> {
+  const store = await getStore();
+  const val = await store.get<WeeklyNarrativeCache>("weekly_narrative");
+  return val ?? null;
+}
+
+export async function saveCachedWeeklyNarrative(weekKey: string, narrative: string) {
+  const store = await getStore();
+  await store.set("weekly_narrative", { weekKey, narrative, generatedAt: new Date().toISOString() });
+}

@@ -5,6 +5,7 @@ import { useTaskStore } from "./stores/tasks";
 import { useCalendarStore } from "./stores/calendar";
 import { useGitLabStore } from "./stores/gitlab";
 import { useFreshserviceStore } from "./stores/freshservice";
+import { useWeeklyStore } from "./stores/weekly";
 import { useNotesStore } from "./stores/notes";
 import { useWikiStore } from "./stores/wiki";
 import { scheduleMeetingNotifications, notifyOverdueTasks } from "./services/notifications";
@@ -15,6 +16,7 @@ export default function App() {
   const { fetchEvents, generateBriefing, prefetchCurrentWeek, todayEvents } = useCalendarStore();
   const { fetch: fetchGitLab } = useGitLabStore();
   const { fetch: fetchTickets } = useFreshserviceStore();
+  const { load: loadWeeklyNarrative, generate: generateWeeklyNarrative } = useWeeklyStore();
   const { load: loadNotes } = useNotesStore();
   const { load: loadWiki } = useWikiStore();
 
@@ -49,9 +51,14 @@ export default function App() {
       fetchTickets();
     }
 
+    // Load cached weekly narrative, then generate in background if missing or new week
+    loadWeeklyNarrative().then(() => {
+      generateWeeklyNarrative(); // no-op if already fresh for this week
+    });
+
     // Notify on startup if there are overdue tasks
     notifyOverdueTasks(tasks).catch(() => {});
-  }, [loaded, settings, fetchEvents, generateBriefing, fetchGitLab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loaded, settings, fetchEvents, generateBriefing, fetchGitLab, fetchTickets, loadWeeklyNarrative, generateWeeklyNarrative]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-schedule meeting notifications whenever today's events change
   useEffect(() => {
