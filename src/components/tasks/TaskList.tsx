@@ -1,5 +1,5 @@
-import { useState, useMemo, memo } from "react";
-import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays } from "lucide-react";
+import { useState, useMemo, memo, useRef, useEffect } from "react";
+import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitLabStore } from "../../stores/gitlab";
@@ -96,11 +96,7 @@ export function TaskList() {
             <option value="gitlab">GitLab</option>
           </select>
           {allTags.length > 0 && (
-            <select value={filterTag} onChange={(e) => setFilterTag(e.target.value)}
-              className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
-              <option value="">All tags</option>
-              {allTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
-            </select>
+            <TagCombobox tags={allTags} value={filterTag} onChange={setFilterTag} />
           )}
           {(filterPriority !== "all" || filterSource !== "all" || filterTag) && (
             <button onClick={() => { setFilterPriority("all"); setFilterSource("all"); setFilterTag(""); }}
@@ -342,3 +338,80 @@ const MRRow = memo(function MRRow({ mr, onOpen }: { mr: GitLabMR; onOpen: (url: 
     </button>
   );
 });
+
+// ─── Tag combobox ─────────────────────────────────────────────────────────────
+
+function TagCombobox({ tags, value, onChange }: { tags: string[]; value: string; onChange: (v: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() =>
+    tags.filter((t) => t.toLowerCase().includes(search.toLowerCase())),
+    [tags, search]
+  );
+
+  // Close on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  function select(tag: string) {
+    onChange(tag);
+    setSearch("");
+    setOpen(false);
+  }
+
+  function clear() {
+    onChange("");
+    setSearch("");
+    setOpen(false);
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div
+        className={`flex items-center gap-1 px-2 py-1 text-xs border rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400
+          ${open ? "border-blue-500 ring-1 ring-blue-500" : "border-gray-200 dark:border-gray-700"}`}
+        style={{ minWidth: "120px" }}
+      >
+        <input
+          type="text"
+          value={value ? value : search}
+          placeholder="Filter by tag…"
+          readOnly={!!value}
+          onClick={() => { if (value) clear(); else setOpen(true); }}
+          onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
+          onFocus={() => { if (!value) setOpen(true); }}
+          className="flex-1 bg-transparent outline-none placeholder-gray-400 dark:placeholder-gray-600 min-w-0"
+          style={{ width: "90px" }}
+        />
+        {value ? (
+          <button onClick={clear} className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <XIcon size={11} />
+          </button>
+        ) : (
+          <ChevronDown size={11} className={`shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        )}
+      </div>
+
+      {open && filtered.length > 0 && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-52 overflow-y-auto min-w-full">
+          {filtered.map((tag) => (
+            <button
+              key={tag}
+              onMouseDown={(e) => { e.preventDefault(); select(tag); }}
+              className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
