@@ -17,10 +17,10 @@ export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps
 
   const nav: { id: View; icon: React.ReactNode; label: string; badge?: number }[] = [
     { id: "dashboard", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
-    { id: "tasks", icon: <CheckSquare size={18} />, label: "Tasks", badge: openTaskCount || undefined },
-    { id: "tickets", icon: <Ticket size={18} />, label: "Tickets", badge: openTicketCount || undefined },
     { id: "calendar", icon: <CalendarDays size={18} />, label: "Calendar" },
     { id: "weekly", icon: <CalendarRange size={18} />, label: "Week Ahead" },
+    { id: "tasks", icon: <CheckSquare size={18} />, label: "Tasks", badge: openTaskCount || undefined },
+    { id: "tickets", icon: <Ticket size={18} />, label: "Tickets", badge: openTicketCount || undefined },
     { id: "notes", icon: <StickyNote size={18} />, label: "Notes" },
     { id: "wiki", icon: <BookOpen size={18} />, label: "Wiki" },
     { id: "settings", icon: <Settings size={18} />, label: "Settings" },
