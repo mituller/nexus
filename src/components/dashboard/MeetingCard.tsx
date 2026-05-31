@@ -26,7 +26,7 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
           {event.teamsLink && (
             <button
               onClick={() => openUrl(event.teamsLink!)}
-              className="shrink-0 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+              className="shrink-0 flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800"
             >
               <Video size={12} /> Join
             </button>
@@ -55,7 +55,7 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
         {event.teamsLink && (
           <button
             onClick={() => openUrl(event.teamsLink!)}
-            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 mt-1"
+            className="flex items-center gap-1 text-xs text-blue-500 hover:text-purple-700 mt-1"
           >
             <ExternalLink size={11} /> Teams link available
           </button>
@@ -67,7 +67,7 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
 
 function Badge({ color, children }: { color: "blue" | "gray" | "orange"; children: React.ReactNode }) {
   const classes = {
-    blue: "bg-blue-100 text-blue-700",
+    blue: "bg-blue-100 text-purple-700",
     gray: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-500",
     orange: "bg-orange-100 text-orange-700",
   };

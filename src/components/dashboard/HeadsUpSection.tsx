@@ -11,7 +11,7 @@ const typeConfig: Record<HeadsUpItem["type"], { icon: React.ReactNode; bg: strin
     bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-900",
   },
   back_to_back: {
-    icon: <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />,
+    icon: <Info size={14} className="text-purple-600 shrink-0 mt-0.5" />,
     bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-900",
   },
   tomorrow: {

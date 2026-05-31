@@ -13,7 +13,7 @@ const PRIORITY_COLORS: Record<TicketPriority, string> = {
 };
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
-  open: "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400",
+  open: "text-purple-600 bg-blue-50 dark:bg-purple-900/20 dark:text-purple-400",
   pending: "text-orange-500 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400",
   resolved: "text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400",
   closed: "text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400",
@@ -52,7 +52,7 @@ export function TicketsView() {
       </div>
 
       {!hasConfig && (
-        <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-sm text-blue-800 dark:text-blue-300">
+        <div className="rounded-lg border border-blue-200 dark:border-purple-800 bg-blue-50 dark:bg-purple-900/20 px-4 py-3 text-sm text-purple-800 dark:text-purple-300">
           Add your Freshservice URL and API key in <strong>Settings → Freshservice</strong> to see your tickets.
         </div>
       )}

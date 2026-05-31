@@ -63,7 +63,7 @@ export function QuickCapture({ onClose, onNavigate }: QuickCaptureProps) {
               onClick={() => setMode(m)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                 mode === m
-                  ? "border-blue-600 text-blue-600"
+                  ? "border-purple-600 text-purple-600"
                   : "border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300"
               }`}
             >
@@ -110,7 +110,7 @@ export function QuickCapture({ onClose, onNavigate }: QuickCaptureProps) {
             <button
               type="submit"
               disabled={!text.trim() || saving}
-              className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-40 transition-colors"
+              className="px-4 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-40 transition-colors"
             >
               {saving ? "Saving…" : `Add ${mode}`}
             </button>

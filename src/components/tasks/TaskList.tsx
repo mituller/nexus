@@ -70,7 +70,7 @@ export function TaskList() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
           >
             <Plus size={14} /> New task
           </button>
@@ -81,14 +81,14 @@ export function TaskList() {
       {tasks.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
           <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value as Task["priority"] | "all")}
-            className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500">
             <option value="all">All priorities</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
           <select value={filterSource} onChange={(e) => setFilterSource(e.target.value)}
-            className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500">
             <option value="all">All sources</option>
             <option value="manual">Manual</option>
             <option value="calendar">Calendar</option>
@@ -100,7 +100,7 @@ export function TaskList() {
           )}
           {(filterPriority !== "all" || filterSource !== "all" || filterTag) && (
             <button onClick={() => { setFilterPriority("all"); setFilterSource("all"); setFilterTag(""); }}
-              className="text-xs text-blue-500 hover:text-blue-700 underline">
+              className="text-xs text-blue-500 hover:text-purple-700 underline">
               Clear filters
             </button>
           )}
@@ -203,7 +203,7 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate }: 
         type="checkbox"
         checked={isDone}
         onChange={() => isDone ? onUpdate(task.id, { status: "open" }) : onComplete(task.id)}
-        className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+        className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
         title={isDone ? "Mark as open" : "Mark as done"}
       />
       <div className="flex-1 min-w-0">
@@ -288,7 +288,7 @@ const GitLabRow = memo(function GitLabRow({ issue, onOpen }: GitLabRowProps) {
             </span>
           )}
           {issue.iteration && (
-            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">⟳ {issue.iteration}</span>
+            <span className="px-1.5 py-0.5 bg-blue-50 text-purple-600 rounded text-xs">⟳ {issue.iteration}</span>
           )}
           {issue.milestone && (
             <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-500 rounded text-xs">{issue.milestone}</span>
@@ -376,7 +376,7 @@ function TagCombobox({ tags, value, onChange }: { tags: string[]; value: string;
     <div ref={ref} className="relative">
       <div
         className={`flex items-center gap-1 px-2 py-1 text-xs border rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400
-          ${open ? "border-blue-500 ring-1 ring-blue-500" : "border-gray-200 dark:border-gray-700"}`}
+          ${open ? "border-purple-500 ring-1 ring-purple-500" : "border-gray-200 dark:border-gray-700"}`}
         style={{ minWidth: "120px" }}
       >
         <input
@@ -405,7 +405,7 @@ function TagCombobox({ tags, value, onChange }: { tags: string[]; value: string;
             <button
               key={tag}
               onMouseDown={(e) => { e.preventDefault(); select(tag); }}
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-purple-700 dark:hover:text-blue-300 transition-colors"
             >
               {tag}
             </button>

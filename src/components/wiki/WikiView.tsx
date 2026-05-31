@@ -160,7 +160,7 @@ export function WikiView() {
               <button
                 onClick={() => { setPanel(panel === "query" ? "none" : "query"); setQueryAnswer(null); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors
-                  ${panel === "query" ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
+                  ${panel === "query" ? "bg-purple-600 text-white border-purple-600" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
               >
                 <Search size={12} /> Query
               </button>
@@ -197,13 +197,13 @@ export function WikiView() {
                 onChange={(e) => setQueryText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleQuery()}
                 placeholder="Ask anything about your wiki… (Enter to search)"
-                className="flex-1 px-3 py-2 text-sm border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                className="flex-1 px-3 py-2 text-sm border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-800"
                 autoFocus
               />
               <button
                 onClick={handleQuery}
                 disabled={queryLoading || !queryText.trim()}
-                className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-40"
+                className="px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:opacity-40"
               >
                 {queryLoading ? <Loader2 size={14} className="animate-spin" /> : "Ask"}
               </button>
@@ -217,7 +217,7 @@ export function WikiView() {
                 {queryAnswer.citations.length > 0 && (
                   <div className="flex flex-wrap gap-1 pt-1">
                     {queryAnswer.citations.map((c) => (
-                      <span key={c} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{c}</span>
+                      <span key={c} className="text-xs bg-blue-100 text-purple-700 px-2 py-0.5 rounded">{c}</span>
                     ))}
                   </div>
                 )}
@@ -296,7 +296,7 @@ export function WikiView() {
                 <LintGroup title="Orphaned pages" items={lintResult.orphanedPages} color="text-red-700" />
                 <LintGroup title="Broken [[links]]" items={lintResult.missingPages} color="text-orange-700" />
                 <LintGroup title="Stale pages (30+ days)" items={lintResult.stalePages} color="text-yellow-700" />
-                <LintGroup title="Suggestions" items={lintResult.suggestions} color="text-blue-700" />
+                <LintGroup title="Suggestions" items={lintResult.suggestions} color="text-purple-700" />
               </div>
             )}
           </div>

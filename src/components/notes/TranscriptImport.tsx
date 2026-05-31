@@ -148,7 +148,7 @@ export function TranscriptImport({ onClose }: TranscriptImportProps) {
               onClick={() => inputRef.current?.click()}
               className={`border-2 border-dashed rounded-lg py-10 flex flex-col items-center gap-2 transition-colors
                 ${dragOver
-                  ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  ? "border-blue-400 dark:border-purple-500 bg-blue-50 dark:bg-purple-900/20"
                   : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50"}`}
             >
               <Upload size={24} className="text-gray-300 dark:text-gray-600" />
@@ -189,7 +189,7 @@ export function TranscriptImport({ onClose }: TranscriptImportProps) {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 placeholder="Subject or topic"
               />
             </div>
@@ -202,7 +202,7 @@ export function TranscriptImport({ onClose }: TranscriptImportProps) {
             <button
               onClick={handleImport}
               disabled={!fileName || importing}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-40 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-40 transition-colors"
             >
               {importing && <Loader2 size={13} className="animate-spin" />}
               Import

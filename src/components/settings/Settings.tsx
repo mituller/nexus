@@ -71,7 +71,7 @@ export function Settings() {
           <button
             type="button"
             onClick={() => setLocal((p) => ({ ...p, darkMode: !p.darkMode }))}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${local.darkMode ? "bg-blue-600" : "bg-gray-300"}`}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${local.darkMode ? "bg-purple-600" : "bg-gray-300"}`}
           >
             <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white dark:bg-gray-800 shadow transition-transform ${local.darkMode ? "translate-x-4" : "translate-x-0.5"}`} />
           </button>
@@ -107,7 +107,7 @@ export function Settings() {
 
         <button
           onClick={addFeed}
-          className="mt-3 flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="mt-3 flex items-center gap-1.5 text-sm text-purple-600 hover:text-purple-800 font-medium"
         >
           <Plus size={14} /> Add calendar
         </button>
@@ -165,7 +165,7 @@ export function Settings() {
       <div className="flex items-center gap-3 pt-2">
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
         >
           Save settings
         </button>
@@ -222,7 +222,7 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
           placeholder="Calendar name"
           value={feed.label}
           onChange={(e) => onChange({ label: e.target.value })}
-          className="flex-shrink-0 w-40 px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+          className="flex-shrink-0 w-40 px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
         />
 
         <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-500 cursor-pointer ml-auto">
@@ -230,7 +230,7 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
             type="checkbox"
             checked={feed.enabled}
             onChange={(e) => onChange({ enabled: e.target.checked })}
-            className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
+            className="h-3.5 w-3.5 rounded border-gray-300 text-purple-600"
           />
           Enabled
         </label>
@@ -245,7 +245,7 @@ function FeedRow({ feed, onChange, onRemove }: FeedRowProps) {
         placeholder="https://…/calendar.ics"
         value={feed.url}
         onChange={(e) => onChange({ url: e.target.value })}
-        className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+        className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-xs dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
       />
     </div>
   );
@@ -281,7 +281,7 @@ function Field({ label, type, placeholder, value, onChange }: FieldProps) {
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
       />
     </div>
   );

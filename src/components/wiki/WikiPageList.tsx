@@ -13,7 +13,7 @@ const ENTITY_LABELS: Record<WikiEntityType, string> = {
   general: "General",
 };
 const ENTITY_COLORS: Record<WikiEntityType, string> = {
-  person: "bg-blue-100 text-blue-700",
+  person: "bg-blue-100 text-purple-700",
   project: "bg-green-100 text-green-700",
   decision: "bg-orange-100 text-orange-700",
   meeting: "bg-purple-100 text-purple-700",
@@ -54,7 +54,7 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
         <div className="flex items-center gap-1.5">
           <button
             onClick={onNewPage}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
           >
             <Plus size={14} /> New page
           </button>
@@ -66,7 +66,7 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
             placeholder="Search wiki…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
           />
         </div>
       </div>
@@ -130,7 +130,7 @@ function PageRow({ page, active, colorClass, onClick, onDelete }: PageRowProps) 
     <button
       onClick={onClick}
       className={`group w-full text-left px-3 py-2 border-b border-gray-50 dark:border-gray-700 transition-colors
-        ${active ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
+        ${active ? "bg-blue-50 dark:bg-purple-900/30 border-l-2 border-l-purple-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
     >
       <div className="flex items-center justify-between gap-1">
         <p className="text-sm text-gray-800 dark:text-gray-100 truncate flex-1 pl-4">{page.title}</p>

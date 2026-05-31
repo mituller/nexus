@@ -262,14 +262,14 @@ function TaskRow({ task, highlight = false, onComplete }: { task: Task; highligh
     <div className={`flex items-start gap-2 px-3 py-2 rounded-lg border text-sm
       ${highlight
         ? isOverdue ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-                    : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                    : "bg-blue-50 dark:bg-purple-900/20 border-blue-200 dark:border-purple-800"
         : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
       {onComplete ? (
         <input
           type="checkbox"
           checked={false}
           onChange={() => onComplete(task.id)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
         />
       ) : (
         <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${priorityDot}`} />

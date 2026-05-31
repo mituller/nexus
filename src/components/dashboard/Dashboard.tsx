@@ -90,7 +90,7 @@ export function Dashboard() {
       </div>
 
       {!hasFeeds && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-purple-800">
           No calendars added yet. Go to <strong>Settings → Calendars</strong> and paste your Outlook or Google iCal URL.
         </div>
       )}

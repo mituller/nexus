@@ -123,7 +123,7 @@ export function CalendarView({ onEventNoteRequest }: CalendarViewProps) {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`px-3 py-1.5 capitalize transition-colors ${mode === m ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
+                className={`px-3 py-1.5 capitalize transition-colors ${mode === m ? "bg-purple-600 text-white" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
               >
                 {m}
               </button>

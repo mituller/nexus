@@ -33,7 +33,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleNew}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
           >
             <Plus size={14} /> New note
           </button>
@@ -52,7 +52,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
             placeholder="Search notes…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+            className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
           />
         </div>
       </div>
@@ -69,7 +69,7 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
             key={note.id}
             onClick={() => setActive(note.id)}
             className={`group w-full text-left px-3 py-3 border-b border-gray-100 dark:border-gray-700 transition-colors
-              ${activeNoteId === note.id ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
+              ${activeNoteId === note.id ? "bg-purple-50 border-l-2 border-l-purple-500" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}
           >
             <div className="flex items-start justify-between gap-1">
               <div className="flex items-center gap-1.5 min-w-0">

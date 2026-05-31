@@ -49,7 +49,7 @@ export function WikiPageDetail() {
     const linked = md.replace(/\[\[([^\]]+)\]\]/g, (_, t) => {
       const exists = pageTitleSet.has(t.toLowerCase());
       const cls = exists
-        ? "wiki-link text-blue-600 hover:text-blue-800 underline underline-offset-2 cursor-pointer font-medium"
+        ? "wiki-link text-purple-600 hover:text-purple-800 underline underline-offset-2 cursor-pointer font-medium"
         : "wiki-link text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-500 underline underline-offset-2 cursor-pointer italic";
       return `<a class="${cls}" data-wiki-title="${encodeURIComponent(t)}" href="#">${t}</a>`;
     });
@@ -107,7 +107,7 @@ export function WikiPageDetail() {
               setEntityType(et);
               scheduleAutoSave(title, content, et);
             }}
-            className="text-xs border border-gray-200 dark:border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+            className="text-xs border border-gray-200 dark:border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
           >
             {ENTITY_TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>

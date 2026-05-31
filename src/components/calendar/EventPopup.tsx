@@ -54,7 +54,7 @@ export function EventPopup({ event, anchorRect, onClose, onAddNotes }: EventPopu
           <div className="flex items-center gap-2 text-xs">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: event.color }} />
             <span className="text-gray-500 dark:text-gray-500">{event.feedLabel}</span>
-            {event.isOrganizer && <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">organizer</span>}
+            {event.isOrganizer && <span className="px-1.5 py-0.5 bg-blue-50 text-purple-600 rounded text-xs">organizer</span>}
             {event.isTentative && <span className="px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded text-xs">tentative</span>}
           </div>
 
@@ -84,7 +84,7 @@ export function EventPopup({ event, anchorRect, onClose, onAddNotes }: EventPopu
             {event.teamsLink && (
               <button
                 onClick={() => openUrl(event.teamsLink!)}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
               >
                 <Video size={12} /> Join Teams
               </button>

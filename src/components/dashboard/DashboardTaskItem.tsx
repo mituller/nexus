@@ -22,7 +22,7 @@ export const DashboardTaskItem = memo(function DashboardTaskItem({ task }: Dashb
     <div className="flex items-start gap-3 px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
       <input
         type="checkbox"
-        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 cursor-pointer"
         onChange={() => complete(task.id)}
       />
       <div className="flex-1 min-w-0">

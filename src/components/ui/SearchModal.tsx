@@ -47,7 +47,7 @@ const TYPE_COLOR: Record<ResultType, string> = {
 };
 
 const TYPE_BADGE: Record<ResultType, string> = {
-  note: "bg-blue-50 text-blue-600",
+  note: "bg-blue-50 text-purple-600",
   task: "bg-green-50 text-green-600",
   wiki: "bg-purple-50 text-purple-600",
   gitlab: "bg-orange-50 text-orange-600",
@@ -162,7 +162,7 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
           {results.map((r, i) => (
             <button key={`${r.type}-${r.id}`} onClick={() => handleSelect(r)} onMouseEnter={() => setActive(i)}
               className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-gray-50 dark:border-gray-700 last:border-0
-                ${i === active ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}>
+                ${i === active ? "bg-blue-50 dark:bg-purple-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700"}`}>
               <span className={`mt-0.5 shrink-0 ${TYPE_COLOR[r.type]}`}>{TYPE_ICON[r.type]}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{renderTitle(r.title)}</p>
