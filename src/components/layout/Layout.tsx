@@ -37,10 +37,12 @@ export function Layout() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  function handleSearchNavigate(type: "note" | "task" | "wiki", id: string) {
+  function handleSearchNavigate(type: "note" | "task" | "wiki" | "gitlab" | "ticket", id: string) {
     if (type === "note") { setView("notes"); setActiveNote(id); }
     else if (type === "task") { setView("tasks"); }
     else if (type === "wiki") { setView("wiki"); setActiveWikiPage(id); }
+    else if (type === "gitlab") { setView("tasks"); }
+    else if (type === "ticket") { setView("tickets"); }
   }
 
   return (

@@ -1,4 +1,6 @@
 import { CalendarEvent, Task, DailyBriefing, HeadsUpItem, ExtractedNoteData, TaskPriority, BedrockConfig } from "../types";
+import type { GitLabIssue } from "./gitlab";
+import type { FreshserviceTicket } from "./freshservice";
 import { format, isBefore, parseISO } from "date-fns";
 import { callClaude } from "./bedrock";
 
@@ -11,7 +13,9 @@ export async function generateDailyBriefing(
   userName: string,
   todayEvents: CalendarEvent[],
   tomorrowEvents: CalendarEvent[],
-  tasks: Task[]
+  tasks: Task[],
+  gitlabIssues: GitLabIssue[] = [],
+  freshserviceTickets: FreshserviceTicket[] = []
 ): Promise<DailyBriefing> {
   const now = new Date();
   const today = format(now, "EEEE, MMMM d, yyyy");
@@ -69,7 +73,7 @@ export async function generateDailyBriefing(
 
   let narrative = "";
   try {
-    narrative = await callClaude(cfg, [{ role: "user", content: buildNarrativePrompt(userName, today, timeStr, upcomingToday, tomorrowEvents, openTasks) }]);
+    narrative = await callClaude(cfg, [{ role: "user", content: buildNarrativePrompt(userName, today, timeStr, upcomingToday, tomorrowEvents, openTasks, gitlabIssues, freshserviceTickets) }]);
   } catch (e) {
     narrative = `Unable to generate narrative — check your Bedrock settings (profile: ${cfg.profile}).`;
   }
@@ -93,21 +97,31 @@ function buildNarrativePrompt(
   timeOfDay: string,
   todayEvents: CalendarEvent[],
   tomorrowEvents: CalendarEvent[],
-  tasks: Task[]
+  tasks: Task[],
+  gitlabIssues: GitLabIssue[] = [],
+  freshserviceTickets: FreshserviceTicket[] = []
 ): string {
   const meetingList = todayEvents
     .map((e) => `- ${e.title} (${format(parseISO(e.start), "h:mm a")}–${format(parseISO(e.end), "h:mm a")}, ${e.isOrganizer ? "organizer" : "attendee"}${e.isTentative ? ", tentative" : ""})`)
     .join("\n");
-  const taskList = tasks.slice(0, 8).map((t) => `- ${t.title} [${t.priority}${t.dueDate ? `, due ${t.dueDate}` : ""}]`).join("\n");
+  const taskList = tasks.slice(0, 6).map((t) => `- ${t.title} [${t.priority}${t.dueDate ? `, due ${t.dueDate}` : ""}]`).join("\n");
   const tomorrowList = tomorrowEvents.slice(0, 3).map((e) => `- ${e.title} (${format(parseISO(e.start), "h:mm a")})`).join("\n");
+  const issueList = gitlabIssues.slice(0, 5).map((i) => `- ${i.title} [${i.priority ?? "medium"}, ${i.projectName}${i.dueDate ? `, due ${i.dueDate}` : ""}]`).join("\n");
+  const ticketList = freshserviceTickets.slice(0, 5).map((t) => `- #${t.id} ${t.subject} [${t.priority}, ${t.statusLabel}${t.dueBy ? `, due ${t.dueBy}` : ""}]`).join("\n");
 
-  return `You are a smart daily briefing assistant. Write a concise, helpful narrative for ${name}. Current time: ${timeOfDay} on ${today}. Do NOT start with a greeting — the app already shows one. The meetings listed are UPCOMING (not yet ended). If the list is empty, focus on tomorrow and open tasks instead. Be specific and actionable. 3-4 short paragraphs max. Flowing prose only — no bullet points.
+  return `You are a smart daily briefing assistant. Write a concise, helpful narrative for ${name}. Current time: ${timeOfDay} on ${today}. Do NOT start with a greeting — the app already shows one. The meetings listed are UPCOMING (not yet ended). Be specific and actionable. 3-4 short paragraphs max. Flowing prose only — no bullet points.
 
 TODAY'S MEETINGS:
 ${meetingList || "No meetings today."}
 
 OPEN TASKS (top priority):
 ${taskList || "No open tasks."}
+
+GITLAB ITEMS:
+${issueList || "None."}
+
+FRESHSERVICE TICKETS:
+${ticketList || "None."}
 
 TOMORROW'S MEETINGS:
 ${tomorrowList || "No meetings tomorrow."}`;

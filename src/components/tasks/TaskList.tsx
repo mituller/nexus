@@ -29,15 +29,28 @@ export function TaskList() {
   const { tasks, complete, remove, update } = useTaskStore();
   const { issues, mrs, connected: gitlabConnected, openIssue } = useGitLabStore();
   const [showForm, setShowForm] = useState(false);
+  const [filterPriority, setFilterPriority] = useState<Task["priority"] | "all">("all");
+  const [filterSource, setFilterSource] = useState<string>("all");
+  const [filterTag, setFilterTag] = useState("");
+
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    tasks.forEach((t) => t.tags.forEach((tag) => tags.add(tag)));
+    return [...tags].sort();
+  }, [tasks]);
 
   const visible = useMemo(() => {
-    return [...tasks].sort((a, b) => {
-      const aDone = a.status === "done" ? 1 : 0;
-      const bDone = b.status === "done" ? 1 : 0;
-      if (aDone !== bDone) return aDone - bDone;
-      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-    });
-  }, [tasks]);
+    return [...tasks]
+      .filter((t) => filterPriority === "all" || t.priority === filterPriority)
+      .filter((t) => filterSource === "all" || t.sourceType === filterSource)
+      .filter((t) => !filterTag || t.tags.includes(filterTag))
+      .sort((a, b) => {
+        const aDone = a.status === "done" ? 1 : 0;
+        const bDone = b.status === "done" ? 1 : 0;
+        if (aDone !== bDone) return aDone - bDone;
+        return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      });
+  }, [tasks, filterPriority, filterSource, filterTag]);
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-8 w-full">
@@ -63,6 +76,41 @@ export function TaskList() {
           </button>
         </div>
       </div>
+
+      {/* Filter bar */}
+      {tasks.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value as Task["priority"] | "all")}
+            className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <option value="all">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select value={filterSource} onChange={(e) => setFilterSource(e.target.value)}
+            className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <option value="all">All sources</option>
+            <option value="manual">Manual</option>
+            <option value="calendar">Calendar</option>
+            <option value="transcript">Transcript / Email</option>
+            <option value="gitlab">GitLab</option>
+          </select>
+          {allTags.length > 0 && (
+            <select value={filterTag} onChange={(e) => setFilterTag(e.target.value)}
+              className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <option value="">All tags</option>
+              {allTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+            </select>
+          )}
+          {(filterPriority !== "all" || filterSource !== "all" || filterTag) && (
+            <button onClick={() => { setFilterPriority("all"); setFilterSource("all"); setFilterTag(""); }}
+              className="text-xs text-blue-500 hover:text-blue-700 underline">
+              Clear filters
+            </button>
+          )}
+          <span className="text-xs text-gray-400 dark:text-gray-600 ml-auto">{visible.filter(t => t.status !== "done").length} shown</span>
+        </div>
+      )}
 
       {showForm && <TaskForm onClose={() => setShowForm(false)} />}
 

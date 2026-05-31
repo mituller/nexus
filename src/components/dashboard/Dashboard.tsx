@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { RefreshCw, Calendar, CheckSquare } from "lucide-react";
-import { format, addDays } from "date-fns";
+import { format, addDays, isBefore, parseISO } from "date-fns";
 import { useCalendarStore } from "../../stores/calendar";
 import { useSettingsStore } from "../../stores/settings";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitLabStore } from "../../stores/gitlab";
+import { useFreshserviceStore } from "../../stores/freshservice";
 import { StatsBar } from "./StatsBar";
 import { HeadsUpSection } from "./HeadsUpSection";
 import { MeetingCard } from "./MeetingCard";
@@ -20,7 +21,8 @@ export function Dashboard() {
     loadingEvents, loadingBriefing, connected, lastFetched,
     fetchEvents, generateBriefing,
   } = useCalendarStore();
-  const { fetch: fetchGitLab } = useGitLabStore();
+  const { fetch: fetchGitLab, issues } = useGitLabStore();
+  const { fetch: fetchTickets, tickets } = useFreshserviceStore();
 
   // Live clock — updates every minute so greeting and time stay current
   const [now, setNow] = useState(() => new Date());
@@ -35,6 +37,7 @@ export function Dashboard() {
     if (hasFeeds && stale && !loadingEvents) {
       fetchEvents().then(() => generateBriefing());
       fetchGitLab();
+      fetchTickets();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -45,8 +48,17 @@ export function Dashboard() {
   const hasFeeds = settings.icalFeeds.some((f) => f.enabled && f.url);
   const openTasks = useMemo(() => tasks.filter((t) => t.status !== "done"), [tasks]);
 
+  // #8 — count overdue GitLab items + Freshservice tickets for stats bar
+  const overdueExternal = useMemo(() => {
+    const today = new Date();
+    const overdueIssues = issues.filter((i) => i.dueDate && isBefore(parseISO(i.dueDate), today)).length;
+    const overdueTickets = tickets.filter((t) => t.dueBy && isBefore(parseISO(t.dueBy), today)).length;
+    return overdueIssues + overdueTickets;
+  }, [issues, tickets]);
+
+  // #5 — Refresh all sources at once
   async function handleRefresh() {
-    await Promise.all([fetchEvents(), fetchGitLab()]);
+    await Promise.all([fetchEvents(), fetchGitLab(), fetchTickets()]);
     await generateBriefing(true);
   }
 
@@ -99,7 +111,7 @@ export function Dashboard() {
       )}
 
       {/* Stats bar */}
-      {briefing && !loadingEvents && <StatsBar stats={briefing.stats} />}
+      {briefing && !loadingEvents && <StatsBar stats={briefing.stats} overdueExternal={overdueExternal} />}
 
       {/* Heads Up — full width */}
       {briefing && briefing.headsUp.length > 0 && (

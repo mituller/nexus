@@ -5,6 +5,8 @@ import { generateDailyBriefing, hasBedrockConfig } from "../services/claude";
 import { getCachedBriefing, saveCachedBriefing } from "../services/store";
 import { useSettingsStore } from "./settings";
 import { useTaskStore } from "./tasks";
+import { useGitLabStore } from "./gitlab";
+import { useFreshserviceStore } from "./freshservice";
 import { isToday, startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, format } from "date-fns";
 
 const STALE_MS = 15 * 60 * 1000; // 15 minutes
@@ -168,10 +170,12 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
 
     const { todayEvents, tomorrowEvents } = get();
     const { tasks } = useTaskStore.getState();
+    const { issues } = useGitLabStore.getState();
+    const { tickets } = useFreshserviceStore.getState();
 
     set({ loadingBriefing: true });
     try {
-      const briefing = await generateDailyBriefing(cfg, settings.userName || "there", todayEvents, tomorrowEvents, tasks);
+      const briefing = await generateDailyBriefing(cfg, settings.userName || "there", todayEvents, tomorrowEvents, tasks, issues, tickets);
       set({ briefing });
       await saveCachedBriefing(JSON.stringify(briefing));
     } catch (e) {
