@@ -305,7 +305,7 @@ export function WikiView() {
         {/* Page detail or graph */}
         {graphView ? (
           <div className="flex-1 relative overflow-hidden">
-            <WikiGraph />
+            <WikiGraph onSelect={() => setGraphView(false)} />
           </div>
         ) : (
           <WikiPageDetail />

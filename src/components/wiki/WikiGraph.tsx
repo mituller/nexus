@@ -106,7 +106,11 @@ function runSimulation(nodes: Node[], edges: Edge[], iterations = 200) {
   return nodes;
 }
 
-export function WikiGraph() {
+interface WikiGraphProps {
+  onSelect?: () => void;
+}
+
+export function WikiGraph({ onSelect }: WikiGraphProps = {}) {
   const { pages, setActive } = useWikiStore();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -123,7 +127,8 @@ export function WikiGraph() {
 
   const handleClick = useCallback((id: string) => {
     setActive(id);
-  }, [setActive]);
+    onSelect?.();
+  }, [setActive, onSelect]);
 
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
