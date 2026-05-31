@@ -1,7 +1,40 @@
+# Dependencies
 node_modules
+package-lock.json
+
+# Build output
 dist
+src-tauri/target
+src-tauri/gen
+
+# Environment / secrets
 .env
 .env.*
 *.local
-src-tauri/target
-src-tauri/gen
+
+# macOS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Tauri bundles (large binaries, not source)
+src-tauri/target/release/bundle
+
+# Editor / IDE
+.vscode/settings.json
+.idea
+*.swp
+*.swo
+.cursor
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage
+
+# Temporary files
+*.tmp
+*.temp
