@@ -33,6 +33,15 @@
       "identifier": "fs:allow-read-text-file",
       "allow": [{ "path": "$HOME/**" }]
     },
-    "fs:allow-exists"
+    "fs:allow-exists",
+    "fs:allow-read-dir",
+    "fs:allow-mkdir",
+    "fs:allow-rename",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "$HOME/**" }]
+    },
+    "dialog:default",
+    "dialog:allow-open"
   ]
 }

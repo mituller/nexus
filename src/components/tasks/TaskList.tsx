@@ -1,5 +1,5 @@
 import { useState, useMemo, memo, useRef, useEffect } from "react";
-import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon, FileText } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitLabStore } from "../../stores/gitlab";
@@ -25,7 +25,11 @@ const GITLAB_PRIORITY_COLOR: Record<NonNullable<GitLabIssue["priority"]>, string
   low: "text-gray-400 dark:text-gray-500",
 };
 
-export function TaskList() {
+interface TaskListProps {
+  onOpenNote?: (noteId: string) => void;
+}
+
+export function TaskList({ onOpenNote }: TaskListProps = {}) {
   const { tasks, complete, remove, update } = useTaskStore();
   const { issues, mrs, connected: gitlabConnected, openIssue } = useGitLabStore();
   const [showForm, setShowForm] = useState(false);
@@ -44,12 +48,7 @@ export function TaskList() {
       .filter((t) => filterPriority === "all" || t.priority === filterPriority)
       .filter((t) => filterSource === "all" || t.sourceType === filterSource)
       .filter((t) => !filterTag || t.tags.includes(filterTag))
-      .sort((a, b) => {
-        const aDone = a.status === "done" ? 1 : 0;
-        const bDone = b.status === "done" ? 1 : 0;
-        if (aDone !== bDone) return aDone - bDone;
-        return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-      });
+      .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
   }, [tasks, filterPriority, filterSource, filterTag]);
 
   return (
@@ -119,7 +118,7 @@ export function TaskList() {
       ) : (
         <div className="space-y-1">
           {visible.map((task) => (
-            <TaskRow key={task.id} task={task} onComplete={complete} onDelete={remove} onUpdate={update} />
+            <TaskRow key={task.id} task={task} onComplete={complete} onDelete={remove} onUpdate={update} onOpenNote={onOpenNote} />
           ))}
         </div>
       )}
@@ -164,9 +163,10 @@ interface TaskRowProps {
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Task>) => void;
+  onOpenNote?: (noteId: string) => void;
 }
 
-const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate }: TaskRowProps) {
+const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, onOpenNote }: TaskRowProps) {
   const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== "done";
   const isDone = task.status === "done";
   const { settings } = useSettingsStore();
@@ -229,10 +229,19 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate }: 
         </div>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        {task.sourceId && onOpenNote && (
+          <button
+            onClick={() => onOpenNote(task.sourceId!)}
+            title="Open source note"
+            className="text-gray-300 hover:text-purple-500 transition-colors"
+          >
+            <FileText size={13} />
+          </button>
+        )}
         <button
           onClick={() => setEditing(true)}
           title="Edit task"
-          className="text-gray-300 hover:text-blue-500 transition-colors"
+          className="text-gray-300 hover:text-purple-500 transition-colors"
         >
           <Pencil size={13} />
         </button>

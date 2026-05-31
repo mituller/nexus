@@ -2,6 +2,7 @@ import { LayoutDashboard, CheckSquare, StickyNote, BookOpen, CalendarDays, Setti
 
 import { useTaskStore } from "../../stores/tasks";
 import { useFreshserviceStore } from "../../stores/freshservice";
+import { useFolderWatcherStore } from "../../stores/folderWatcher";
 
 type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly" | "tickets";
 
@@ -15,6 +16,7 @@ interface SidebarProps {
 export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps) {
   const openTaskCount = useTaskStore((s) => s.tasks.filter((t) => t.status !== "done").length);
   const openTicketCount = useFreshserviceStore((s) => s.tickets.length);
+  const newNoteCount = useFolderWatcherStore((s) => s.newNoteCount);
 
   const nav: { id: View; icon: React.ReactNode; label: string; badge?: number }[] = [
     { id: "dashboard", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
@@ -22,7 +24,7 @@ export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps
     { id: "weekly", icon: <CalendarRange size={18} />, label: "Week Ahead" },
     { id: "tasks", icon: <CheckSquare size={18} />, label: "Tasks", badge: openTaskCount || undefined },
     { id: "tickets", icon: <Ticket size={18} />, label: "Tickets", badge: openTicketCount || undefined },
-    { id: "notes", icon: <StickyNote size={18} />, label: "Notes" },
+    { id: "notes", icon: <StickyNote size={18} />, label: "Notes", badge: newNoteCount || undefined },
     { id: "wiki", icon: <BookOpen size={18} />, label: "Wiki" },
     { id: "settings", icon: <Settings size={18} />, label: "Settings" },
   ];
@@ -30,7 +32,7 @@ export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps
   return (
     <aside className="w-52 shrink-0 bg-gray-900 flex flex-col h-full">
       <div className="px-4 py-4 border-b border-gray-700 flex items-center gap-2.5">
-        <img src="/icon.svg" alt="" className="w-7 h-7 shrink-0" />
+        <img src="/icon.svg" alt="" className="w-10 h-10 shrink-0" />
         <span className="text-white font-semibold text-lg tracking-tight">Nexus</span>
       </div>
 

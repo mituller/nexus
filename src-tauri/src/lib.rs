@@ -1,6 +1,20 @@
 use tauri::Manager;
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+/// Extract plain text from Office/RTF/PDF files using macOS textutil
+#[tauri::command]
+async fn extract_text_from_file(path: String) -> Result<String, String> {
+    let output = std::process::Command::new("textutil")
+        .args(["-stdout", "-convert", "txt", &path])
+        .output()
+        .map_err(|e| format!("textutil not available: {e}"))?;
+    if output.status.success() {
+        String::from_utf8(output.stdout).map_err(|e| e.to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
 #[tauri::command]
 async fn invoke_bedrock(
     profile: String,
@@ -87,7 +101,8 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![invoke_bedrock])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![invoke_bedrock, extract_text_from_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

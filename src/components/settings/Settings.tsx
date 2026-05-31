@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Check, Plus, Trash2, GripVertical } from "lucide-react";
+import { Check, Plus, Trash2, GripVertical, FolderOpen, RefreshCw } from "lucide-react";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { useFolderWatcherStore } from "../../stores/folderWatcher";
 import { useSettingsStore } from "../../stores/settings";
 import { AppSettings, ICalFeed, FEED_COLORS } from "../../types";
 import { getDailyUsage, getMonthlyUsage, estimateCost, formatTokens, formatCost, PeriodUsage } from "../../services/tokenUsage";
@@ -148,6 +150,9 @@ export function Settings() {
         <Field label="API Key" type="password" placeholder="your-api-key" {...field("freshserviceApiKey")} />
       </Section>
 
+      {/* Watched Folder */}
+      <WatchedFolderSection local={local} setLocal={setLocal} />
+
       {/* AWS Bedrock */}
       <Section title="Claude AI — via AWS Bedrock">
         <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
@@ -284,6 +289,111 @@ function Field({ label, type, placeholder, value, onChange }: FieldProps) {
         className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
       />
     </div>
+  );
+}
+
+function WatchedFolderSection({ local, setLocal }: { local: AppSettings; setLocal: React.Dispatch<React.SetStateAction<AppSettings>> }) {
+  const { running, lastScanned, newNoteCount, scanNow, stopPolling } = useFolderWatcherStore();
+  const [scanning, setScanning] = useState(false);
+
+  async function pickFolder() {
+    const selected = await openDialog({ directory: true, multiple: false });
+    if (selected && typeof selected === "string") {
+      setLocal((p) => ({ ...p, watchFolderPath: selected }));
+    }
+  }
+
+  async function handleScanNow() {
+    setScanning(true);
+    const count = await scanNow();
+    setScanning(false);
+    if (count === 0) alert("No new files found.");
+    else alert(`Imported ${count} file${count !== 1 ? "s" : ""} as notes.`);
+  }
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Watched Folder</h2>
+      <div className="space-y-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
+          Nexus scans this folder every 30 seconds and imports new files as notes.
+          Processed files are moved to a <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">_processed</code> subfolder.
+          Supports: .eml, .vtt, .txt, .md, .docx, .doc, .rtf, .pdf
+        </p>
+
+        {/* Enable toggle */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Enable watched folder</p>
+            {lastScanned && <p className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">Last scanned {lastScanned.toLocaleTimeString()}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !local.watchFolderEnabled;
+              setLocal((p) => ({ ...p, watchFolderEnabled: next }));
+              if (!next && running) stopPolling();
+            }}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${local.watchFolderEnabled ? "bg-purple-600" : "bg-gray-300 dark:bg-gray-600"}`}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${local.watchFolderEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+
+        {/* Folder path */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Folder path</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="/Users/you/Documents/Nexus/inbox"
+              value={local.watchFolderPath}
+              onChange={(e) => setLocal((p) => ({ ...p, watchFolderPath: e.target.value }))}
+              className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 font-mono text-xs"
+            />
+            <button
+              type="button"
+              onClick={pickFolder}
+              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <FolderOpen size={14} /> Browse
+            </button>
+          </div>
+        </div>
+
+        {/* Auto-extract toggle */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Auto-extract tasks with AI</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600">Runs AI extraction automatically on import</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLocal((p) => ({ ...p, watchFolderAutoExtract: !p.watchFolderAutoExtract }))}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${local.watchFolderAutoExtract ? "bg-purple-600" : "bg-gray-300 dark:bg-gray-600"}`}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${local.watchFolderAutoExtract ? "translate-x-4" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+
+        {/* Manual scan */}
+        {local.watchFolderPath && (
+          <button
+            type="button"
+            onClick={handleScanNow}
+            disabled={scanning}
+            className="flex items-center gap-1.5 text-sm text-purple-600 hover:text-purple-800 disabled:opacity-40"
+          >
+            <RefreshCw size={13} className={scanning ? "animate-spin" : ""} />
+            {scanning ? "Scanning…" : "Scan now"}
+          </button>
+        )}
+
+        {newNoteCount > 0 && (
+          <p className="text-xs text-green-600 dark:text-green-400">{newNoteCount} new note{newNoteCount !== 1 ? "s" : ""} imported</p>
+        )}
+      </div>
+    </section>
   );
 }
 

@@ -12,6 +12,7 @@ import { SearchModal } from "../ui/SearchModal";
 import { QuickCapture } from "../ui/QuickCapture";
 import { useNotesStore } from "../../stores/notes";
 import { useWikiStore } from "../../stores/wiki";
+import { useFolderWatcherStore } from "../../stores/folderWatcher";
 
 type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly" | "tickets";
 
@@ -21,6 +22,7 @@ export function Layout() {
   const [captureOpen, setCaptureOpen] = useState(false);
   const { setActive: setActiveNote } = useNotesStore();
   const { setActive: setActiveWikiPage } = useWikiStore();
+  const { clearBadge: clearNotesBadge } = useFolderWatcherStore();
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -47,10 +49,10 @@ export function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      <Sidebar current={view} onChange={setView} onSearch={() => setSearchOpen(true)} onCapture={() => setCaptureOpen(true)} />
+      <Sidebar current={view} onChange={(v) => { setView(v); if (v === "notes") clearNotesBadge(); }} onSearch={() => setSearchOpen(true)} onCapture={() => setCaptureOpen(true)} />
       <main className="flex-1 overflow-y-auto flex flex-col">
         {view === "dashboard" && <Dashboard />}
-        {view === "tasks" && <TaskList />}
+        {view === "tasks" && <TaskList onOpenNote={(noteId) => { setActiveNote(noteId); setView("notes"); }} />}
         {view === "calendar" && <CalendarView onEventNoteRequest={() => setView("notes")} />}
         {view === "notes" && <NotesView />}
         {view === "wiki" && <WikiView />}

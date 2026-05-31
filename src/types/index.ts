@@ -133,6 +133,10 @@ export interface AppSettings {
   // Freshservice
   freshserviceUrl: string;
   freshserviceApiKey: string;
+  // Watched folder
+  watchFolderEnabled: boolean;
+  watchFolderPath: string;
+  watchFolderAutoExtract: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -150,6 +154,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   bedrockModelId: "us.anthropic.claude-sonnet-4-6",
   freshserviceUrl: "",
   freshserviceApiKey: "",
+  watchFolderEnabled: false,
+  watchFolderPath: "",
+  watchFolderAutoExtract: false,
 };
 
 export const FEED_COLORS = [

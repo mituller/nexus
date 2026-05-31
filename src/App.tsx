@@ -6,6 +6,7 @@ import { useCalendarStore } from "./stores/calendar";
 import { useGitLabStore } from "./stores/gitlab";
 import { useFreshserviceStore } from "./stores/freshservice";
 import { useWeeklyStore } from "./stores/weekly";
+import { useFolderWatcherStore } from "./stores/folderWatcher";
 import { useNotesStore } from "./stores/notes";
 import { useWikiStore } from "./stores/wiki";
 import { scheduleMeetingNotifications, notifyOverdueTasks } from "./services/notifications";
@@ -17,6 +18,7 @@ export default function App() {
   const { fetch: fetchGitLab } = useGitLabStore();
   const { fetch: fetchTickets } = useFreshserviceStore();
   const { load: loadWeeklyNarrative, generate: generateWeeklyNarrative } = useWeeklyStore();
+  const { startPolling, stopPolling } = useFolderWatcherStore();
   const { load: loadNotes } = useNotesStore();
   const { load: loadWiki } = useWikiStore();
 
@@ -49,6 +51,13 @@ export default function App() {
 
     if (settings.freshserviceUrl && settings.freshserviceApiKey) {
       fetchTickets();
+    }
+
+    // Start watched folder polling if enabled
+    if (settings.watchFolderEnabled && settings.watchFolderPath) {
+      startPolling();
+    } else {
+      stopPolling();
     }
 
     // Load cached weekly narrative, then generate in background if missing or new week
