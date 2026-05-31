@@ -150,7 +150,7 @@ export function Dashboard() {
           {/* Narrative */}
           {briefing?.narrative && (
             <section className="border-t border-gray-200 dark:border-gray-700 pt-5">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">A few things worth calling out:</p>
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">A few things worth calling out:</h2>
               <div className="text-sm text-gray-600 dark:text-gray-500 leading-relaxed whitespace-pre-line">
                 {briefing.narrative}
               </div>

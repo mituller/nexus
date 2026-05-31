@@ -119,7 +119,7 @@ ${issueSummary || "None"}
 FRESHSERVICE TICKETS DUE:
 ${ticketSummary || "None"}
 
-Write 3-4 focused paragraphs: busiest/lightest days, key priorities to tackle, anything needing prep. Do NOT start with a greeting. Flowing prose, no bullet points.`;
+Write 3-4 focused paragraphs: busiest/lightest days, key priorities to tackle, anything needing prep. Do NOT start with a greeting. Flowing prose only — no markdown headers, no bullet points, no bold text.`;
 
       const narrative = await callClaude(cfg, [{ role: "user", content: prompt }], 1024);
 

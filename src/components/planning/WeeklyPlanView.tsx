@@ -102,15 +102,17 @@ export function WeeklyPlanView() {
         <div className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">Generating week overview…</div>
       )}
       {narrative && (
-        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded-lg px-5 py-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
-          {narrative}
+        <section className="border-t border-gray-200 dark:border-gray-700 pt-5">
+          <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
+            {narrative.replace(/^#{1,3}\s[^\n]*\n?/gm, "").trim()}
+          </div>
           {generatedAt && (
-            <p className="mt-2 text-xs text-gray-400 dark:text-gray-600">
+            <p className="mt-3 text-xs text-gray-400 dark:text-gray-600">
               Generated {format(new Date(generatedAt), "EEE MMM d 'at' h:mm a")}
               {loadingNarrative && " · Refreshing…"}
             </p>
           )}
-        </div>
+        </section>
       )}
 
       <div className="grid grid-cols-5 gap-6 items-start">
