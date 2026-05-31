@@ -128,10 +128,33 @@ export function WeekView({ anchor, events, onEventNoteRequest }: WeekViewProps) 
 
   const hours = Array.from({ length: VISIBLE_HOURS }, (_, i) => START_HOUR + i);
 
+  function isAllDay(e: CalendarEvent): boolean {
+    const s = new Date(e.start);
+    const ms = new Date(e.end).getTime() - s.getTime();
+    // All-day: starts at local midnight, duration is a multiple of 24 h
+    return s.getHours() === 0 && s.getMinutes() === 0 && s.getSeconds() === 0
+      && ms > 0 && ms % (24 * 60 * 60 * 1000) === 0;
+  }
+
   function eventsForDay(day: Date) {
     const str = format(day, "yyyy-MM-dd");
-    return events.filter((e) => format(new Date(e.start), "yyyy-MM-dd") === str);
+    return events.filter((e) => format(new Date(e.start), "yyyy-MM-dd") === str && !isAllDay(e));
   }
+
+  function allDayEventsForDay(day: Date) {
+    const str = format(day, "yyyy-MM-dd");
+    // An all-day event shows on a day if the day falls within [start, end)
+    return events.filter((e) => {
+      if (!isAllDay(e)) return false;
+      const s = format(new Date(e.start), "yyyy-MM-dd");
+      const endDate = new Date(e.end);
+      endDate.setDate(endDate.getDate() - 1); // end is exclusive
+      const en = format(endDate, "yyyy-MM-dd");
+      return str >= s && str <= en;
+    });
+  }
+
+  const hasAllDay = days.some((d) => allDayEventsForDay(d).length > 0);
 
   return (
     <>
@@ -149,6 +172,32 @@ export function WeekView({ anchor, events, onEventNoteRequest }: WeekViewProps) 
           </div>
         ))}
       </div>
+
+      {/* All-day events strip */}
+      {hasAllDay && (
+        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 shrink-0">
+          <div className="w-14 shrink-0 flex items-start justify-end pr-2 pt-1.5">
+            <span className="text-xs text-gray-400 dark:text-gray-600">all‑day</span>
+          </div>
+          {days.map((day) => {
+            const dayAllDay = allDayEventsForDay(day);
+            return (
+              <div key={day.toISOString()} className="flex-1 border-l border-gray-100 dark:border-gray-700 px-0.5 py-1 space-y-0.5 min-h-7">
+                {dayAllDay.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded px-2 py-0.5 text-xs font-medium truncate cursor-default"
+                    style={{ backgroundColor: `${event.color}22`, borderLeft: `3px solid ${event.color}`, color: event.color }}
+                    title={event.title}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Scrollable time grid */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">

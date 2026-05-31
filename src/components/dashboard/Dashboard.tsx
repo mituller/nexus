@@ -10,12 +10,13 @@ import { StatsBar } from "./StatsBar";
 import { HeadsUpSection } from "./HeadsUpSection";
 import { MeetingCard } from "./MeetingCard";
 import { DashboardTaskItem } from "./DashboardTaskItem";
+import { sortTasks } from "../ui/TaskItem";
 import { GitLabSection } from "./GitLabSection";
 import { FreshserviceSection } from "./FreshserviceSection";
 
 export function Dashboard() {
   const { settings } = useSettingsStore();
-  const { tasks } = useTaskStore();
+  const { tasks, complete } = useTaskStore();
   const {
     todayEvents, tomorrowEvents, briefing,
     loadingEvents, loadingBriefing, connected, lastFetched,
@@ -46,7 +47,7 @@ export function Dashboard() {
   const greeting = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
   const name = settings.userName || "there";
   const hasFeeds = settings.icalFeeds.some((f) => f.enabled && f.url);
-  const openTasks = useMemo(() => tasks.filter((t) => t.status !== "done"), [tasks]);
+  const openTasks = useMemo(() => sortTasks(tasks.filter((t) => t.status !== "done")), [tasks]);
 
   // #8 — count overdue GitLab items + Freshservice tickets for stats bar
   const overdueExternal = useMemo(() => {
@@ -174,7 +175,7 @@ export function Dashboard() {
                 Open Tasks
               </SectionHeader>
               <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
-                {openTasks.slice(0, 8).map((t) => <DashboardTaskItem key={t.id} task={t} />)}
+                {openTasks.slice(0, 8).map((t) => <DashboardTaskItem key={t.id} task={t} onComplete={complete} />)}
               </div>
             </section>
           )}

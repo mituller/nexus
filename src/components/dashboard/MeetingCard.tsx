@@ -8,10 +8,18 @@ interface MeetingCardProps {
   event: CalendarEvent;
 }
 
+function checkAllDay(event: MeetingCardProps["event"]): boolean {
+  const s = new Date(event.start);
+  const ms = new Date(event.end).getTime() - s.getTime();
+  return s.getHours() === 0 && s.getMinutes() === 0 && s.getSeconds() === 0
+    && ms > 0 && ms % (24 * 60 * 60 * 1000) === 0;
+}
+
 export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps) {
   const start = parseISO(event.start);
   const end = parseISO(event.end);
   const isPast = end < new Date();
+  const allDay = checkAllDay(event);
 
   const otherAttendees = event.attendees
     .filter((a) => !event.isOrganizer || a.response !== "accepted")
@@ -33,8 +41,8 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
           )}
         </div>
         <p className={`text-xs mt-0.5 ${isPast ? "text-gray-400 dark:text-gray-500" : "text-gray-500 dark:text-gray-500"}`}>
-          {format(start, "h:mm a")}–{format(end, "h:mm a")}
-          {isPast && " · may have passed"}
+          {allDay ? "All Day" : `${format(start, "h:mm a")}–${format(end, "h:mm a")}`}
+          {isPast && !allDay && " · may have passed"}
           {event.feedLabel && (
             <span className="ml-1.5 font-medium" style={{ color: event.color }}>
               · {event.feedLabel}

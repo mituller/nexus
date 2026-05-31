@@ -12,10 +12,10 @@ import { open as openUrl } from "@tauri-apps/plugin-shell";
 
 const PRIORITY_ORDER: Record<Task["priority"], number> = { high: 0, medium: 1, low: 2 };
 
-const PRIORITY_BG: Record<Task["priority"], string> = {
-  high: "text-red-600",
-  medium: "text-orange-500",
-  low: "text-gray-400 dark:text-gray-500",
+const PRIORITY_BADGE: Record<Task["priority"], string> = {
+  high:   "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400",
+  medium: "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400",
+  low:    "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
 };
 
 const GITLAB_PRIORITY_COLOR: Record<NonNullable<GitLabIssue["priority"]>, string> = {
@@ -214,8 +214,8 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate }: 
           <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 truncate">{task.description}</p>
         )}
         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-          <span className={`text-xs font-medium ${PRIORITY_BG[task.priority]}`}>
-            ● {task.priority}
+          <span className={`px-1.5 py-0.5 rounded text-xs font-medium capitalize ${PRIORITY_BADGE[task.priority]}`}>
+            {task.priority}
           </span>
           {task.tags.map((tag) => (
             <span key={tag} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-500 rounded text-xs">{tag}</span>

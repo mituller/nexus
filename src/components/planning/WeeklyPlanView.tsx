@@ -8,7 +8,8 @@ import { useGitLabStore } from "../../stores/gitlab";
 import { useFreshserviceStore } from "../../stores/freshservice";
 import { useWeeklyStore } from "../../stores/weekly";
 import { MeetingCard } from "../dashboard/MeetingCard";
-import { CalendarEvent, Task } from "../../types";
+import { TaskItem, sortTasks } from "../ui/TaskItem";
+import { CalendarEvent } from "../../types";
 
 export function WeeklyPlanView() {
   const { settings } = useSettingsStore();
@@ -46,11 +47,11 @@ export function WeeklyPlanView() {
 
   const openTasks = tasks.filter((t) => t.status !== "done");
 
-  const thisWeekTasks = openTasks.filter((t) => {
+  const thisWeekTasks = sortTasks(openTasks.filter((t) => {
     if (!t.dueDate) return false;
     const due = parseISO(t.dueDate);
     return (isBefore(due, now) || (due >= weekStart && due <= weekEnd));
-  });
+  }));
 
   const thisWeekIssues = issues.filter((i) => {
     if (!i.dueDate) return false;
@@ -152,7 +153,7 @@ export function WeeklyPlanView() {
               </h2>
               <div className="space-y-1">
                 {thisWeekTasks.map((t) => (
-                  <TaskRow key={t.id} task={t} highlight onComplete={complete} />
+                  <TaskItem key={t.id} task={t} onComplete={complete} />
                 ))}
               </div>
             </section>
@@ -227,42 +228,3 @@ export function WeeklyPlanView() {
   );
 }
 
-function TaskRow({ task, highlight = false, onComplete }: { task: Task; highlight?: boolean; onComplete?: (id: string) => void }) {
-  const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date());
-  const priorityDot = task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-orange-400" : "bg-gray-300 dark:bg-gray-600";
-
-  return (
-    <div className={`flex items-start gap-2 px-3 py-2 rounded-lg border text-sm
-      ${highlight
-        ? isOverdue ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-                    : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
-        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
-      {onComplete ? (
-        <input
-          type="checkbox"
-          checked={false}
-          onChange={() => onComplete(task.id)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-        />
-      ) : (
-        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${priorityDot}`} />
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-gray-800 dark:text-gray-100 truncate">{task.title}</p>
-        {task.dueDate && (
-          <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
-            {isOverdue ? "Overdue · " : "Due "}
-            {format(parseISO(task.dueDate), "EEE MMM d")}
-          </p>
-        )}
-        {task.tags.length > 0 && (
-          <div className="flex gap-1 mt-1 flex-wrap">
-            {task.tags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded">{tag}</span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
