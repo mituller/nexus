@@ -159,7 +159,7 @@ export function CalendarView({ onEventNoteRequest }: CalendarViewProps) {
       ) : mode === "week" ? (
         <WeekView anchor={anchor} events={events} onEventNoteRequest={handleEventNote} />
       ) : (
-        <MonthView anchor={anchor} events={events} />
+        <MonthView anchor={anchor} events={events} onEventNoteRequest={handleEventNote} />
       )}
     </div>
   );
