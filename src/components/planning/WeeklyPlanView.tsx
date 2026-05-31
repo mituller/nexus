@@ -8,12 +8,15 @@ import { MeetingCard } from "../dashboard/MeetingCard";
 import { callClaude } from "../../services/bedrock";
 import { CalendarEvent, Task } from "../../types";
 import { useGitLabStore } from "../../stores/gitlab";
+import { useFreshserviceStore } from "../../stores/freshservice";
+import { Ticket } from "lucide-react";
 
 export function WeeklyPlanView() {
   const { settings } = useSettingsStore();
   const { fetchEventsForRange } = useCalendarStore();
-  const { tasks } = useTaskStore();
+  const { tasks, complete } = useTaskStore();
   const { issues, openIssue } = useGitLabStore();
+  const { tickets, openTicket } = useFreshserviceStore();
 
   const [weekEvents, setWeekEvents] = useState<CalendarEvent[]>([]);
   const [narrative, setNarrative] = useState("");
@@ -73,11 +76,28 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
 
   useEffect(() => { loadWeek(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const weekStart = days[0];
+  const weekEnd = days[days.length - 1];
+
+  const today = new Date();
   const openTasks = tasks.filter((t) => t.status !== "done");
+
   const thisWeekTasks = openTasks.filter((t) => {
     if (!t.dueDate) return false;
     const due = parseISO(t.dueDate);
-    return due >= days[0] && due <= days[days.length - 1];
+    return (isBefore(due, today) || (due >= weekStart && due <= weekEnd));
+  });
+
+  const thisWeekIssues = issues.filter((i) => {
+    if (!i.dueDate) return false;
+    const due = parseISO(i.dueDate);
+    return (isBefore(due, today) || (due >= weekStart && due <= weekEnd));
+  });
+
+  const thisWeekTickets = tickets.filter((t) => {
+    if (!t.dueBy) return false;
+    const due = parseISO(t.dueBy);
+    return (isBefore(due, today) || (due >= weekStart && due <= weekEnd));
   });
 
   return (
@@ -146,46 +166,32 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
           })}
         </div>
 
-        {/* Right: tasks */}
+        {/* Right: due this week */}
         <div className="col-span-2 space-y-5">
-          {openTasks.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-600 pt-6 text-center">No open tasks.</p>
-          ) : (
-            <>
-              {thisWeekTasks.length > 0 && (
-                <section>
-                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
-                    <CheckSquare size={13} /> Due This Week ({thisWeekTasks.length})
-                  </h2>
-                  <div className="space-y-1">
-                    {thisWeekTasks.map((t) => (
-                      <TaskRow key={t.id} task={t} highlight />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {openTasks.filter(t => !thisWeekTasks.includes(t)).length > 0 && (
-                <section>
-                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
-                    <CheckSquare size={13} /> Other Open Tasks
-                  </h2>
-                  <div className="space-y-1">
-                    {openTasks.filter(t => !thisWeekTasks.includes(t)).map((t) => (
-                      <TaskRow key={t.id} task={t} />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
+          {thisWeekTasks.length === 0 && thisWeekIssues.length === 0 && thisWeekTickets.length === 0 && (
+            <p className="text-sm text-gray-400 dark:text-gray-600 pt-6 text-center">Nothing due this week.</p>
           )}
-          {issues.length > 0 && (
+
+          {thisWeekTasks.length > 0 && (
             <section>
               <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
-                <GitBranch size={13} /> GitLab Items ({issues.length})
+                <CheckSquare size={13} /> Tasks ({thisWeekTasks.length})
               </h2>
               <div className="space-y-1">
-                {issues.map((issue) => (
+                {thisWeekTasks.map((t) => (
+                  <TaskRow key={t.id} task={t} highlight onComplete={complete} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {thisWeekIssues.length > 0 && (
+            <section>
+              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
+                <GitBranch size={13} /> GitLab Items ({thisWeekIssues.length})
+              </h2>
+              <div className="space-y-1">
+                {thisWeekIssues.map((issue) => (
                   <button
                     key={issue.id}
                     onClick={() => openIssue(issue.webUrl)}
@@ -207,22 +213,67 @@ Write 3-4 paragraphs covering: the busiest/lightest days, priorities to tackle, 
               </div>
             </section>
           )}
+
+          {thisWeekTickets.length > 0 && (
+            <section>
+              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
+                <Ticket size={13} /> Freshservice Tickets ({thisWeekTickets.length})
+              </h2>
+              <div className="space-y-1">
+                {thisWeekTickets.map((ticket) => {
+                  const isOverdue = ticket.dueBy && isBefore(parseISO(ticket.dueBy), new Date());
+                  return (
+                    <button
+                      key={ticket.id}
+                      onClick={() => openTicket(ticket.webUrl)}
+                      className="group w-full flex items-start gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-left hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                    >
+                      <Ticket size={13} className="mt-0.5 shrink-0 text-teal-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-gray-800 dark:text-gray-100 truncate">#{ticket.id} — {ticket.subject}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{ticket.statusLabel}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">· {ticket.priority}</span>
+                          {ticket.dueBy && (
+                            <span className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
+                              · Due {format(parseISO(ticket.dueBy), "MMM d")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ExternalLink size={11} className="shrink-0 text-gray-300 group-hover:text-teal-500 mt-0.5 transition-colors" />
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function TaskRow({ task, highlight = false }: { task: Task; highlight?: boolean }) {
+function TaskRow({ task, highlight = false, onComplete }: { task: Task; highlight?: boolean; onComplete?: (id: string) => void }) {
   const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date());
   const priorityDot = task.priority === "high" ? "bg-red-400" : task.priority === "medium" ? "bg-orange-400" : "bg-gray-300 dark:bg-gray-600";
 
   return (
     <div className={`flex items-start gap-2 px-3 py-2 rounded-lg border text-sm
       ${highlight
-        ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+        ? isOverdue ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                    : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
         : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
-      <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${priorityDot}`} />
+      {onComplete ? (
+        <input
+          type="checkbox"
+          checked={false}
+          onChange={() => onComplete(task.id)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+        />
+      ) : (
+        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${priorityDot}`} />
+      )}
       <div className="flex-1 min-w-0">
         <p className="text-gray-800 dark:text-gray-100 truncate">{task.title}</p>
         {task.dueDate && (
