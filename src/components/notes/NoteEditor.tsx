@@ -229,7 +229,7 @@ export function NoteEditor() {
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         {preview ? (
           <div
-            className="prose prose-sm max-w-none text-gray-800 dark:text-gray-100"
+            className="wiki-content"
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />
         ) : (

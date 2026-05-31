@@ -151,7 +151,7 @@ export function WikiPageDetail() {
           />
         ) : (
           <div
-            className="prose prose-sm max-w-none text-gray-800 dark:text-gray-100"
+            className="wiki-content"
             onClick={handleContentClick}
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />

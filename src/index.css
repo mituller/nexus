@@ -54,3 +54,30 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
 .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+
+/* Wiki page content */
+.wiki-content {
+  font-size: 0.875rem;
+  line-height: 1.625;
+  color: #4b5563;
+}
+.dark .wiki-content { color: #9ca3af; }
+.wiki-content p  { margin-bottom: 0.75rem; }
+.wiki-content h1 { font-size: 1rem;       font-weight: 600; color: #374151; margin: 1.25rem 0 0.5rem; }
+.wiki-content h2 { font-size: 0.875rem;   font-weight: 600; color: #374151; margin: 1rem 0 0.375rem; }
+.wiki-content h3 { font-size: 0.875rem;   font-weight: 500; color: #6b7280; margin: 0.75rem 0 0.25rem; }
+.wiki-content strong { font-weight: 600; color: #374151; }
+.wiki-content a  { color: #352184; text-decoration: none; }
+.wiki-content a:hover { text-decoration: underline; }
+.wiki-content ul { list-style: disc;    padding-left: 1.25rem; margin: 0.5rem 0; }
+.wiki-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+.wiki-content li { margin-bottom: 0.25rem; }
+.wiki-content hr { border: none; border-top: 1px solid #e5e7eb; margin: 1rem 0; }
+.wiki-content code { font-size: 0.8125rem; background: #f3f4f6; padding: 0.1em 0.3em; border-radius: 3px; }
+.dark .wiki-content h1,
+.dark .wiki-content h2 { color: #e5e7eb; }
+.dark .wiki-content h3 { color: #9ca3af; }
+.dark .wiki-content strong { color: #e5e7eb; }
+.dark .wiki-content a  { color: #a78bfa; }
+.dark .wiki-content hr { border-color: #374151; }
+.dark .wiki-content code { background: #374151; }
