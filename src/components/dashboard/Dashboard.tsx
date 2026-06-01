@@ -14,7 +14,9 @@ import { sortTasks } from "../ui/TaskItem";
 import { GitLabSection } from "./GitLabSection";
 import { FreshserviceSection } from "./FreshserviceSection";
 
-export function Dashboard() {
+import { CalendarEvent } from "../../types";
+
+export function Dashboard({ onAddMeetingNote }: { onAddMeetingNote?: (event: CalendarEvent) => void } = {}) {
   const { settings } = useSettingsStore();
   const { tasks, complete } = useTaskStore();
   const {
@@ -131,7 +133,7 @@ export function Dashboard() {
                 Today's Meetings — {format(now, "MMMM d")}
               </SectionHeader>
               <div className="space-y-2">
-                {todayEvents.map((e) => <MeetingCard key={e.id} event={e} />)}
+                {todayEvents.map((e) => <MeetingCard key={e.id} event={e} onAddNotes={onAddMeetingNote} />)}
               </div>
             </section>
           )}
@@ -142,7 +144,7 @@ export function Dashboard() {
                 Tomorrow — {format(addDays(now, 1), "EEEE MMMM d")}
               </SectionHeader>
               <div className="space-y-2">
-                {tomorrowEvents.map((e) => <MeetingCard key={e.id} event={e} />)}
+                {tomorrowEvents.map((e) => <MeetingCard key={e.id} event={e} onAddNotes={onAddMeetingNote} />)}
               </div>
             </section>
           )}

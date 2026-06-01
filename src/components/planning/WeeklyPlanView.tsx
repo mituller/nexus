@@ -11,7 +11,7 @@ import { MeetingCard } from "../dashboard/MeetingCard";
 import { TaskItem, sortTasks } from "../ui/TaskItem";
 import { CalendarEvent } from "../../types";
 
-export function WeeklyPlanView() {
+export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event: CalendarEvent) => void } = {}) {
   const { settings } = useSettingsStore();
   const { fetchEventsForRange } = useCalendarStore();
   const { tasks, complete } = useTaskStore();
@@ -134,7 +134,7 @@ export function WeeklyPlanView() {
                   <p className="text-xs text-gray-300 dark:text-gray-600 pl-2">No events</p>
                 ) : (
                   <div className="space-y-1.5">
-                    {dayEvents.map((e) => <MeetingCard key={e.id} event={e} />)}
+                    {dayEvents.map((e) => <MeetingCard key={e.id} event={e} onAddNotes={onAddMeetingNote} />)}
                   </div>
                 )}
               </div>

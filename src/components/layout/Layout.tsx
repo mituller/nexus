@@ -13,6 +13,8 @@ import { QuickCapture } from "../ui/QuickCapture";
 import { useNotesStore } from "../../stores/notes";
 import { useWikiStore } from "../../stores/wiki";
 import { useFolderWatcherStore } from "../../stores/folderWatcher";
+import { buildMeetingNoteTemplate } from "../../services/meetingNotes";
+import { CalendarEvent } from "../../types";
 
 type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly" | "tickets";
 
@@ -20,9 +22,16 @@ export function Layout() {
   const [view, setView] = useState<View>("dashboard");
   const [searchOpen, setSearchOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
-  const { setActive: setActiveNote } = useNotesStore();
+  const { setActive: setActiveNote, create: createNote } = useNotesStore();
   const { setActive: setActiveWikiPage } = useWikiStore();
   const { clearBadge: clearNotesBadge } = useFolderWatcherStore();
+
+  async function handleAddMeetingNote(event: CalendarEvent) {
+    const { title, content } = buildMeetingNoteTemplate(event);
+    const note = await createNote({ title, content, tags: ["meeting"], sourceType: "manual", linkedEventId: event.id, linkedEventTitle: event.title });
+    setActiveNote(note.id);
+    setView("notes");
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -51,12 +60,12 @@ export function Layout() {
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
       <Sidebar current={view} onChange={(v) => { setView(v); if (v === "notes") clearNotesBadge(); }} onSearch={() => setSearchOpen(true)} onCapture={() => setCaptureOpen(true)} />
       <main className="flex-1 overflow-y-auto flex flex-col">
-        {view === "dashboard" && <Dashboard />}
+        {view === "dashboard" && <Dashboard onAddMeetingNote={handleAddMeetingNote} />}
         {view === "tasks" && <TaskList onOpenNote={(noteId) => { setActiveNote(noteId); setView("notes"); }} />}
         {view === "calendar" && <CalendarView onEventNoteRequest={() => setView("notes")} />}
         {view === "notes" && <NotesView />}
         {view === "wiki" && <WikiView />}
-        {view === "weekly" && <WeeklyPlanView />}
+        {view === "weekly" && <WeeklyPlanView onAddMeetingNote={handleAddMeetingNote} />}
         {view === "tickets" && <TicketsView />}
         {view === "settings" && <Settings />}
       </main>

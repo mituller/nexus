@@ -1,11 +1,12 @@
 import { memo } from "react";
-import { ExternalLink, Video } from "lucide-react";
+import { ExternalLink, Video, FileText } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { CalendarEvent } from "../../types";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 
 interface MeetingCardProps {
   event: CalendarEvent;
+  onAddNotes?: (event: CalendarEvent) => void;
 }
 
 function checkAllDay(event: MeetingCardProps["event"]): boolean {
@@ -15,7 +16,7 @@ function checkAllDay(event: MeetingCardProps["event"]): boolean {
     && ms > 0 && ms % (24 * 60 * 60 * 1000) === 0;
 }
 
-export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps) {
+export const MeetingCard = memo(function MeetingCard({ event, onAddNotes }: MeetingCardProps) {
   const start = parseISO(event.start);
   const end = parseISO(event.end);
   const isPast = end < new Date();
@@ -60,14 +61,24 @@ export const MeetingCard = memo(function MeetingCard({ event }: MeetingCardProps
             {event.bodyPreview ? " — " + event.bodyPreview.slice(0, 60) : ""}
           </p>
         )}
-        {event.teamsLink && (
-          <button
-            onClick={() => openUrl(event.teamsLink!)}
-            className="flex items-center gap-1 text-xs text-blue-500 hover:text-purple-700 mt-1"
-          >
-            <ExternalLink size={11} /> Teams link available
-          </button>
-        )}
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          {onAddNotes && !allDay && (
+            <button
+              onClick={() => onAddNotes(event)}
+              className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+            >
+              <FileText size={11} /> Meeting notes
+            </button>
+          )}
+          {event.teamsLink && (
+            <button
+              onClick={() => openUrl(event.teamsLink!)}
+              className="flex items-center gap-1 text-xs text-blue-500 hover:text-purple-700 transition-colors"
+            >
+              <ExternalLink size={11} /> Teams link
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
