@@ -67,7 +67,17 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
   },
 
   remove: async (id) => {
+    // Get source note IDs before deletion (deleteWikiPage resets wiki_processed_at in DB)
+    const page = get().pages.find((p) => p.id === id);
     await db.deleteWikiPage(id);
+    // Reflect wiki_processed_at reset in the notes store so badge updates immediately
+    if (page?.sourceIds.length) {
+      const { useNotesStore } = await import("./notes");
+      const { update: updateNote } = useNotesStore.getState();
+      for (const noteId of page.sourceIds) {
+        updateNote(noteId, { wikiProcessedAt: undefined });
+      }
+    }
     const remaining = get().pages.filter((p) => p.id !== id);
     set({
       pages: remaining,

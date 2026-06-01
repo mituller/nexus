@@ -7,7 +7,7 @@ import { useNotesStore } from "../../stores/notes";
 import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
 import { extractFromNote, hasBedrockConfig } from "../../services/claude";
-import { linkNoteTask, markNoteExtracted } from "../../services/notes";
+import { linkNoteTask, markNoteExtracted, resetNoteWikiProcessed } from "../../services/notes";
 import { ExtractedNoteData } from "../../types";
 
 export function NoteEditor() {
@@ -111,6 +111,11 @@ export function NoteEditor() {
       });
       setTaskActions(defaultActions);
       setSelectedTasks(new Set(enriched.map((_, i) => i).filter(i => defaultActions[i] === "create")));
+
+      // Mark as extracted; also re-queue for wiki ingest so pages stay current
+      await markNoteExtracted(activeNoteId);
+      await resetNoteWikiProcessed(activeNoteId);
+      update(activeNoteId, { extractedAt: new Date().toISOString(), wikiProcessedAt: undefined });
     } catch (e) {
       console.error("Extraction failed:", e);
     } finally {
@@ -148,8 +153,6 @@ export function NoteEditor() {
         await linkNoteTask(activeNoteId, created.id);
       }
     }
-    await markNoteExtracted(activeNoteId);
-    update(activeNoteId, { extractedAt: new Date().toISOString() });
     setExtracted(null);
     setSelectedTasks(new Set());
     setTaskActions({});

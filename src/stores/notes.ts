@@ -33,7 +33,12 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   update: async (id, updates) => {
     await db.updateNote(id, updates);
     set({
-      notes: get().notes.map((n) => (n.id === id ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n)),
+      notes: get().notes.map((n) => {
+        if (n.id !== id) return n;
+        // If content changed, clear wikiProcessedAt so it re-queues for ingest
+        const wikiReset = updates.content !== undefined ? { wikiProcessedAt: undefined } : {};
+        return { ...n, ...updates, ...wikiReset, updatedAt: new Date().toISOString() };
+      }),
     });
   },
 

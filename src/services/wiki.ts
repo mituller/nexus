@@ -89,6 +89,20 @@ export async function upsertWikiPageByTitle(
 
 export async function deleteWikiPage(id: string): Promise<void> {
   const d = await getDb();
+  // Get the page's source note IDs before deleting
+  const rows = await d.select<{ source_ids: string }[]>(
+    "SELECT source_ids FROM wiki_pages WHERE id = $1", [id]
+  );
+  if (rows[0]) {
+    const sourceIds: string[] = JSON.parse(rows[0].source_ids || "[]");
+    // Reset wiki_processed_at on source notes so they can be re-ingested
+    for (const noteId of sourceIds) {
+      await d.execute(
+        "UPDATE notes SET wiki_processed_at = NULL, updated_at = $1 WHERE id = $2",
+        [new Date().toISOString(), noteId]
+      );
+    }
+  }
   await d.execute("DELETE FROM wiki_pages WHERE id = $1", [id]);
 }
 
@@ -103,7 +117,7 @@ export async function markNoteWikiProcessed(noteId: string): Promise<void> {
 export async function getUnprocessedNotes(): Promise<Array<{ id: string; title: string; content: string }>> {
   const d = await getDb();
   const rows = await d.select<Record<string, unknown>[]>(
-    "SELECT id, title, content FROM notes WHERE wiki_processed_at IS NULL AND length(content) > 50 ORDER BY created_at DESC LIMIT 20"
+    "SELECT id, title, content FROM notes WHERE wiki_processed_at IS NULL AND length(content) > 10 ORDER BY created_at DESC LIMIT 20"
   );
   return rows.map((r) => ({ id: r.id as string, title: r.title as string, content: r.content as string }));
 }

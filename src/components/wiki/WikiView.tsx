@@ -45,6 +45,8 @@ export function WikiView() {
 
   async function handleIngest() {
     if (!bedrockReady) return;
+    // Reload notes from DB first — ensures wiki_processed_at resets are reflected
+    await useNotesStore.getState().load();
     const unprocessed = await getUnprocessedNotes();
     if (unprocessed.length === 0) {
       alert("All notes have been processed. Add more notes first.");
@@ -82,6 +84,8 @@ export function WikiView() {
         }
 
         await markNoteWikiProcessed(note.id);
+        // Reflect in store so the badge updates immediately
+        useNotesStore.getState().update(note.id, { wikiProcessedAt: new Date().toISOString() });
       } catch (e) {
         console.error(`Failed to process note "${note.title}":`, e);
       }
@@ -133,8 +137,10 @@ export function WikiView() {
     setActive(created.id);
   }
 
-  const unprocessedCount = notes.filter((n) => !n.content || n.content.length < 50).length;
-  const totalUnprocessed = notes.length - unprocessedCount;
+  // Notes that have enough content and haven't been wiki-processed yet
+  const totalUnprocessed = notes.filter(
+    (n) => n.content && n.content.length > 10 && !n.wikiProcessedAt
+  ).length;
 
   return (
     <div className="flex h-full overflow-hidden">

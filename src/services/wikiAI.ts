@@ -24,10 +24,12 @@ export async function ingestNoteToWiki(
   existingPageTitles: string[]
 ): Promise<WikiPageDraft[]> {
   const existingList = existingPageTitles.slice(0, 50).join(", ") || "none";
+  const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
   const prompt = `You maintain a personal knowledge wiki. Extract wiki-worthy entities from this note and generate wiki page content for each one.
 
 NOTE TITLE: ${noteTitle}
+NOTE DATE: ${today}
 NOTE CONTENT:
 ${noteContent.slice(0, 6000)}
 
@@ -45,13 +47,21 @@ Return ONLY valid JSON (no markdown fences):
   ]
 }
 
-Rules:
+Standard rules:
 - Only extract SIGNIFICANT entities: named people, named projects, key decisions, recurring concepts
 - Minimum 3-4 sentences of useful content per page — skip trivial mentions
 - isNew: false if the title matches an existing wiki page, true if brand new
 - For existing pages, write the full updated page integrating new info
 - Cross-link related entities using [[Page Title]] syntax
-- Max 6 pages per note`;
+- Max 6 pages per note
+
+MEETING ENTITY RULES:
+If this note is from a RECURRING meeting (daily standup, weekly check-in, 1:1, team meeting, etc.), generate TWO pages:
+1. DATED page — title: "Meeting Name – ${today}", entityType: "meeting", isNew: true always. Content: full notes from this specific occurrence (attendees, topics discussed, decisions, action items).
+2. PARENT SUMMARY page — title: "Meeting Name" (no date), entityType: "meeting", isNew: false if already in existing pages list. Content: purpose of the meeting, regular attendees, RECURRING themes and patterns seen across multiple occurrences, standing agenda items. Do NOT include per-session details here — keep it as a high-level summary that stays relevant over time. Update this summary based on what this session reveals about patterns.
+
+For ONE-OFF meetings, create a single dated page only (no parent summary needed).
+For non-recurring meeting content, use standard rules above.`;
 
   const raw = await callClaudePrompt(cfg, prompt, 3000);
   const parsed = parseJson<{ pages: WikiPageDraft[] }>(raw);

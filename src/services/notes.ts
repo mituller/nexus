@@ -53,7 +53,11 @@ export async function updateNote(
   let i = 1;
 
   if (updates.title !== undefined) { fields.push(`title = $${i++}`); values.push(updates.title); }
-  if (updates.content !== undefined) { fields.push(`content = $${i++}`); values.push(updates.content); }
+  if (updates.content !== undefined) {
+    fields.push(`content = $${i++}`); values.push(updates.content);
+    // Content changed — re-queue for wiki ingest so pages stay up to date
+    fields.push(`wiki_processed_at = NULL`);
+  }
   if (updates.tags !== undefined) { fields.push(`tags = $${i++}`); values.push(JSON.stringify(updates.tags)); }
   if (updates.linkedEventId !== undefined) { fields.push(`linked_event_id = $${i++}`); values.push(updates.linkedEventId); }
   if (updates.linkedEventTitle !== undefined) { fields.push(`linked_event_title = $${i++}`); values.push(updates.linkedEventTitle); }
@@ -78,6 +82,14 @@ export async function linkNoteTask(noteId: string, taskId: string): Promise<void
   );
 }
 
+export async function resetNoteWikiProcessed(noteId: string): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE notes SET wiki_processed_at = NULL, updated_at = $1 WHERE id = $2",
+    [new Date().toISOString(), noteId]
+  );
+}
+
 export async function markNoteExtracted(noteId: string): Promise<void> {
   const d = await getDb();
   const now = new Date().toISOString();
@@ -97,6 +109,7 @@ function rowToNote(row: Record<string, unknown>): Note {
     linkedEventTitle: (row.linked_event_title as string) ?? undefined,
     sourceType: row.source_type as NoteSourceType,
     extractedAt: (row.extracted_at as string) ?? undefined,
+    wikiProcessedAt: (row.wiki_processed_at as string) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
