@@ -27,6 +27,14 @@ export function Layout() {
   const { clearBadge: clearNotesBadge } = useFolderWatcherStore();
 
   async function handleAddMeetingNote(event: CalendarEvent) {
+    // Reuse existing note for this event if one already exists
+    const { notes } = useNotesStore.getState();
+    const existing = notes.find((n) => n.linkedEventId === event.id);
+    if (existing) {
+      setActiveNote(existing.id);
+      setView("notes");
+      return;
+    }
     const { title, content } = buildMeetingNoteTemplate(event);
     const note = await createNote({ title, content, tags: ["meeting"], sourceType: "manual", linkedEventId: event.id, linkedEventTitle: event.title });
     setActiveNote(note.id);
