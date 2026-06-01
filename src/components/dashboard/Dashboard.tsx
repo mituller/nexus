@@ -16,7 +16,7 @@ import { FreshserviceSection } from "./FreshserviceSection";
 
 import { CalendarEvent } from "../../types";
 
-export function Dashboard({ onAddMeetingNote }: { onAddMeetingNote?: (event: CalendarEvent) => void } = {}) {
+export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingNote?: (event: CalendarEvent) => void; onNavigateTasks?: () => void } = {}) {
   const { settings } = useSettingsStore();
   const { tasks, complete } = useTaskStore();
   const {
@@ -118,7 +118,7 @@ export function Dashboard({ onAddMeetingNote }: { onAddMeetingNote?: (event: Cal
 
       {/* Heads Up — full width */}
       {briefing && briefing.headsUp.length > 0 && (
-        <HeadsUpSection items={briefing.headsUp} />
+        <HeadsUpSection items={briefing.headsUp} onNavigateTasks={onNavigateTasks} />
       )}
 
       {/* Two-column body */}
@@ -126,6 +126,24 @@ export function Dashboard({ onAddMeetingNote }: { onAddMeetingNote?: (event: Cal
 
         {/* Left column — meetings (3/5 width) */}
         <div className="col-span-3 space-y-5">
+
+          {/* Narrative — above meetings */}
+          {briefing?.narrative && (
+            <section>
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">A few things worth calling out:</h2>
+              <div className="text-sm text-gray-600 dark:text-gray-500 leading-relaxed whitespace-pre-line">
+                {briefing.narrative}
+              </div>
+              <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                Generated {format(new Date(briefing.generatedAt), "h:mm a")}
+                {loadingBriefing && " · Refreshing…"}
+              </p>
+            </section>
+          )}
+
+          {loadingBriefing && !briefing && (
+            <p className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">Generating your briefing…</p>
+          )}
 
           {todayEvents.length > 0 && (
             <section>
@@ -147,24 +165,6 @@ export function Dashboard({ onAddMeetingNote }: { onAddMeetingNote?: (event: Cal
                 {tomorrowEvents.map((e) => <MeetingCard key={e.id} event={e} onAddNotes={onAddMeetingNote} />)}
               </div>
             </section>
-          )}
-
-          {/* Narrative */}
-          {briefing?.narrative && (
-            <section className="border-t border-gray-200 dark:border-gray-700 pt-5">
-              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">A few things worth calling out:</h2>
-              <div className="text-sm text-gray-600 dark:text-gray-500 leading-relaxed whitespace-pre-line">
-                {briefing.narrative}
-              </div>
-              <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-                Generated {format(new Date(briefing.generatedAt), "h:mm a")}
-                {loadingBriefing && " · Refreshing…"}
-              </p>
-            </section>
-          )}
-
-          {loadingBriefing && !briefing && (
-            <p className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">Generating your briefing…</p>
           )}
         </div>
 

@@ -38,7 +38,26 @@ export async function generateDailyBriefing(
   for (const t of overdueTasks) {
     headsUp.push({
       type: "overdue",
-      message: `Overdue: "${t.title}" — was due ${t.dueDate ? format(parseISO(t.dueDate), "MMM d") : "recently"}.`,
+      message: `Overdue task: "${t.title}" — was due ${t.dueDate ? format(parseISO(t.dueDate), "MMM d") : "recently"}.`,
+      taskId: t.id,
+    });
+  }
+
+  // Overdue GitLab items
+  for (const i of gitlabIssues.filter(i => i.dueDate && isBefore(parseISO(i.dueDate), now)).slice(0, 3)) {
+    headsUp.push({
+      type: "overdue",
+      message: `Overdue GitLab: "${i.title}" — due ${format(parseISO(i.dueDate!), "MMM d")}.`,
+      url: i.webUrl,
+    });
+  }
+
+  // Overdue Freshservice tickets
+  for (const t of freshserviceTickets.filter(t => t.dueBy && isBefore(parseISO(t.dueBy), now)).slice(0, 3)) {
+    headsUp.push({
+      type: "overdue",
+      message: `Overdue ticket #${t.id}: "${t.subject}" — due ${format(parseISO(t.dueBy!), "MMM d")}.`,
+      url: t.webUrl,
     });
   }
 
@@ -189,27 +208,62 @@ Rules:
 
 // ─── VTT / transcript cleaning ───────────────────────────────────────────────
 
-export function cleanTranscriptText(raw: string): string {
-  // Split into cue blocks (separated by blank lines)
-  const blocks = raw.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+// UUID-style Teams cue IDs like "ba33dcbe-cd01-4481-8eb6-cb579022ce22/130-1"
+const UUID_CUE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/[\w-]+)?$/i;
 
-  const segments: { speaker: string; text: string }[] = [];
+function formatVttTimestamp(vttTime: string, isAbsoluteUtc: boolean): string {
+  const m = vttTime.match(/(\d+):(\d+):(\d+)/);
+  if (!m) return "";
+  const h = parseInt(m[1]), min = parseInt(m[2]);
+
+  if (isAbsoluteUtc) {
+    // Convert absolute UTC time to CST (America/Chicago)
+    const d = new Date();
+    d.setUTCHours(h, min, 0, 0);
+    return d.toLocaleTimeString("en-US", {
+      hour: "numeric", minute: "2-digit", hour12: true,
+      timeZone: "America/Chicago",
+    });
+  }
+  // Relative elapsed time — show as H:MM or M:SS
+  if (h > 0) return `${h}:${String(min).padStart(2, "0")}`;
+  return `${min}:${String(parseInt(m[3])).padStart(2, "0")}`;
+}
+
+export function cleanTranscriptText(raw: string): string {
+  const blocks = raw.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  const segments: { speaker: string; text: string; time: string }[] = [];
+
+  // Detect whether timestamps are absolute UTC (hours >= 6) after scanning first cue
+  let isAbsoluteUtc: boolean | null = null;
 
   for (const block of blocks) {
-    // Skip the WEBVTT header and NOTE blocks
     if (/^WEBVTT/i.test(block) || /^NOTE\b/i.test(block)) continue;
 
     const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
 
-    // Find the text lines (skip cue number and timestamp line)
-    const textLines = lines.filter(
-      (l) => !/^\d+$/.test(l) && !/^\d{2}:\d{2}/.test(l)
-    );
-    if (textLines.length === 0) continue;
+    // Extract timestamp line and skip UUID cue IDs / plain cue numbers
+    let time = "";
+    const textLines: string[] = [];
+    for (const line of lines) {
+      if (UUID_CUE_RE.test(line)) continue;       // UUID cue identifier
+      if (/^\d+$/.test(line)) continue;            // numeric cue identifier
+      if (/^\d{2}:\d{2}:\d{2}/.test(line)) {       // timestamp line
+        const tsMatch = line.match(/^(\d{2}:\d{2}:\d{2})/);
+        if (tsMatch) {
+          const h = parseInt(tsMatch[1].split(":")[0]);
+          if (isAbsoluteUtc === null) isAbsoluteUtc = h >= 6;
+          time = formatVttTimestamp(tsMatch[1], isAbsoluteUtc ?? false);
+        }
+        continue;
+      }
+      textLines.push(line);
+    }
 
+    if (textLines.length === 0) continue;
     let text = textLines.join(" ");
 
-    // Extract speaker from <v Speaker Name> tag (Teams format)
+    // Extract speaker from <v Speaker Name> tag
     const speakerMatch = text.match(/^<v\s+([^>]+)>([\s\S]*)/);
     let speaker = "";
     if (speakerMatch) {
@@ -217,29 +271,29 @@ export function cleanTranscriptText(raw: string): string {
       text = speakerMatch[2];
     }
 
-    // Strip all remaining VTT/HTML tags (<c>, <00:00:00.000>, </v>, etc.)
+    // Strip remaining VTT tags
     text = text
       .replace(/<\d{2}:\d{2}:\d{2}\.\d+>/g, "")
       .replace(/<[^>]+>/g, "")
       .trim();
 
     if (!text) continue;
-    segments.push({ speaker, text });
+    segments.push({ speaker, text, time });
   }
 
   if (segments.length === 0) {
-    // Fallback for non-standard VTT
     return raw
       .replace(/^WEBVTT.*$/gm, "")
       .replace(/^\d{2}:\d{2}[\d:.,\s-->]+$/gm, "")
       .replace(/^NOTE\b.*$/gm, "")
+      .replace(UUID_CUE_RE.source, "")
       .replace(/^\d+$/gm, "")
       .replace(/<[^>]+>/g, "")
       .split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
   }
 
-  // Merge consecutive lines from the same speaker into one paragraph
-  const merged: { speaker: string; text: string }[] = [];
+  // Merge consecutive same-speaker lines; keep the first timestamp of each group
+  const merged: { speaker: string; text: string; time: string }[] = [];
   for (const seg of segments) {
     const last = merged[merged.length - 1];
     if (last && last.speaker === seg.speaker) {
@@ -249,8 +303,12 @@ export function cleanTranscriptText(raw: string): string {
     }
   }
 
-  // Format: bold speaker name followed by their text, blank line between speakers
+  // Format: **Speaker** (time): text
   return merged
-    .map(({ speaker, text }) => (speaker ? `**${speaker}:** ${text}` : text))
+    .map(({ speaker, text, time }) => {
+      if (!speaker) return text;
+      const timeStr = time ? ` (${time})` : "";
+      return `**${speaker}**${timeStr}: ${text}`;
+    })
     .join("\n\n");
 }

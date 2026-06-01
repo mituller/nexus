@@ -60,7 +60,7 @@ export function Layout() {
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
       <Sidebar current={view} onChange={(v) => { setView(v); if (v === "notes") clearNotesBadge(); }} onSearch={() => setSearchOpen(true)} onCapture={() => setCaptureOpen(true)} />
       <main className="flex-1 overflow-y-auto flex flex-col">
-        {view === "dashboard" && <Dashboard onAddMeetingNote={handleAddMeetingNote} />}
+        {view === "dashboard" && <Dashboard onAddMeetingNote={handleAddMeetingNote} onNavigateTasks={() => setView("tasks")} />}
         {view === "tasks" && <TaskList onOpenNote={(noteId) => { setActiveNote(noteId); setView("notes"); }} />}
         {view === "calendar" && <CalendarView onEventNoteRequest={() => setView("notes")} />}
         {view === "notes" && <NotesView />}

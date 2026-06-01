@@ -22,7 +22,11 @@ export function NoteEditor() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tagsInput, setTagsInput] = useState("");
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(true); // default to preview
+  const [searching, setSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, setSearchIdx] = useState(0);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedNoteData | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
@@ -35,6 +39,9 @@ export function NoteEditor() {
       setTitle(note.title);
       setContent(note.content);
       setTagsInput(note.tags.join(", "));
+      setPreview(true); // always open to preview when switching notes
+      setSearching(false);
+      setSearchQuery("");
       setExtracted(null);
       setSelectedTasks(new Set());
     }
@@ -166,7 +173,42 @@ export function NoteEditor() {
     );
   }
 
-  const renderedHtml = useMemo(() => marked.parse(content) as string, [content]);
+  // Cmd+F / Ctrl+F — open in-note search
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f" && note) {
+        e.preventDefault();
+        setPreview(true);
+        setSearching((v) => {
+          if (!v) setTimeout(() => searchRef.current?.focus(), 50);
+          return true;
+        });
+      }
+      if (e.key === "Escape") {
+        setSearching(false);
+        setSearchQuery("");
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [note]);
+
+  // Build highlighted HTML — wrap matches in <mark>
+  const renderedHtml = useMemo(() => {
+    const raw = marked.parse(content) as string;
+    if (!searchQuery.trim() || !searching) return raw;
+    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return raw.replace(
+      new RegExp(`(${escaped})`, "gi"),
+      '<mark class="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">$1</mark>'
+    );
+  }, [content, searchQuery, searching]);
+
+  const matchCount = useMemo(() => {
+    if (!searchQuery.trim() || !searching) return 0;
+    const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return (content.match(new RegExp(escaped, "gi")) ?? []).length;
+  }, [content, searchQuery, searching]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -205,6 +247,38 @@ export function NoteEditor() {
           )}
         </div>
       </div>
+
+      {/* In-note search bar */}
+      {searching && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 shrink-0">
+          <input
+            ref={searchRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setSearchIdx(0); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                setSearchIdx((i) => (i + 1) % Math.max(matchCount, 1));
+              }
+              if (e.key === "Escape") { setSearching(false); setSearchQuery(""); }
+            }}
+            placeholder="Search in note…"
+            className="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+          />
+          {searchQuery && (
+            <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+              {matchCount === 0 ? "No matches" : `${matchCount} match${matchCount !== 1 ? "es" : ""}`}
+            </span>
+          )}
+          <button
+            onClick={() => { setSearching(false); setSearchQuery(""); }}
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xs shrink-0"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Title */}
       <div className="px-6 pt-5 pb-1 shrink-0">

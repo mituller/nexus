@@ -49,6 +49,8 @@ export interface Attendee {
 export interface HeadsUpItem {
   type: "overdue" | "tentative" | "back_to_back" | "tomorrow" | "info";
   message: string;
+  taskId?: string;  // internal task → navigate to Tasks
+  url?: string;     // external item → open in browser
 }
 
 export interface DailyBriefing {
@@ -94,6 +96,7 @@ export interface Note {
   linkedEventTitle?: string;
   sourceType: NoteSourceType;
   extractedAt?: string;
+  wikiProcessedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
