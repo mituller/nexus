@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, Calendar, CheckSquare, Sparkles, GitBranch, ExternalLink, Ticket } from "lucide-react";
+import { RefreshCw, Calendar, CheckSquare, Sparkles, GitBranch, Ticket } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, parseISO, isBefore } from "date-fns";
+import { GitLabItemRow } from "../gitlab/GitLabItemRow";
+import { FreshserviceTicketRow } from "../tickets/FreshserviceTicketRow";
 import { useCalendarStore } from "../../stores/calendar";
 import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
@@ -15,8 +17,8 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
   const { settings } = useSettingsStore();
   const { fetchEventsForRange } = useCalendarStore();
   const { tasks, complete } = useTaskStore();
-  const { issues, openIssue } = useGitLabStore();
-  const { tickets, openTicket } = useFreshserviceStore();
+  const { issues } = useGitLabStore();
+  const { tickets } = useFreshserviceStore();
   const { narrative, loading: loadingNarrative, generatedAt, generate: generateNarrative } = useWeeklyStore();
 
   const [weekEvents, setWeekEvents] = useState<CalendarEvent[]>([]);
@@ -168,23 +170,7 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
               </h2>
               <div className="space-y-1">
                 {thisWeekIssues.map((issue) => (
-                  <button
-                    key={issue.id}
-                    onClick={() => openIssue(issue.webUrl)}
-                    className="group w-full flex items-start gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-left hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-                  >
-                    <GitBranch size={13} className="mt-0.5 shrink-0 text-orange-400" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 dark:text-gray-100 truncate">{issue.title}</p>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{issue.projectName} #{issue.iid}</span>
-                        <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs capitalize">{issue.issueType}</span>
-                        {issue.iteration && <span className="text-xs text-purple-500">⟳ {issue.iteration}</span>}
-                        {issue.dueDate && <span className="text-xs text-gray-400 dark:text-gray-500">· Due {format(parseISO(issue.dueDate), "MMM d")}</span>}
-                      </div>
-                    </div>
-                    <ExternalLink size={11} className="shrink-0 text-gray-300 group-hover:text-gray-500 mt-0.5 transition-colors" />
-                  </button>
+                  <GitLabItemRow key={issue.id} issue={issue} compact />
                 ))}
               </div>
             </section>
@@ -196,31 +182,9 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
                 <Ticket size={13} /> Freshservice Tickets ({thisWeekTickets.length})
               </h2>
               <div className="space-y-1">
-                {thisWeekTickets.map((ticket) => {
-                  const isOverdue = ticket.dueBy && isBefore(parseISO(ticket.dueBy), now);
-                  return (
-                    <button
-                      key={ticket.id}
-                      onClick={() => openTicket(ticket.webUrl)}
-                      className="group w-full flex items-start gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-left hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-                    >
-                      <Ticket size={13} className="mt-0.5 shrink-0 text-teal-500" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-800 dark:text-gray-100 truncate">#{ticket.id} — {ticket.subject}</p>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{ticket.statusLabel}</span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">· {ticket.priority}</span>
-                          {ticket.dueBy && (
-                            <span className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
-                              · Due {format(parseISO(ticket.dueBy), "MMM d")}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <ExternalLink size={11} className="shrink-0 text-gray-300 group-hover:text-teal-500 mt-0.5 transition-colors" />
-                    </button>
-                  );
-                })}
+                {thisWeekTickets.map((ticket) => (
+                  <FreshserviceTicketRow key={ticket.id} ticket={ticket} compact />
+                ))}
               </div>
             </section>
           )}

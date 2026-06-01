@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Video } from "lucide-react";
+import { isAllDay as isAllDayUtil } from "../../utils/calendar";
 import { format, startOfWeek, addDays, isToday, parseISO, differenceInMinutes } from "date-fns";
 import { CalendarEvent } from "../../types";
 import { EventPopup } from "./EventPopup";
@@ -128,13 +129,7 @@ export function WeekView({ anchor, events, onEventNoteRequest }: WeekViewProps) 
 
   const hours = Array.from({ length: VISIBLE_HOURS }, (_, i) => START_HOUR + i);
 
-  function isAllDay(e: CalendarEvent): boolean {
-    const s = new Date(e.start);
-    const ms = new Date(e.end).getTime() - s.getTime();
-    // All-day: starts at local midnight, duration is a multiple of 24 h
-    return s.getHours() === 0 && s.getMinutes() === 0 && s.getSeconds() === 0
-      && ms > 0 && ms % (24 * 60 * 60 * 1000) === 0;
-  }
+  const isAllDay = isAllDayUtil;
 
   function eventsForDay(day: Date) {
     const str = format(day, "yyyy-MM-dd");

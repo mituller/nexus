@@ -3,24 +3,18 @@ import { ExternalLink, Video, FileText } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { CalendarEvent } from "../../types";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
+import { isAllDay } from "../../utils/calendar";
 
 interface MeetingCardProps {
   event: CalendarEvent;
   onAddNotes?: (event: CalendarEvent) => void;
 }
 
-function checkAllDay(event: MeetingCardProps["event"]): boolean {
-  const s = new Date(event.start);
-  const ms = new Date(event.end).getTime() - s.getTime();
-  return s.getHours() === 0 && s.getMinutes() === 0 && s.getSeconds() === 0
-    && ms > 0 && ms % (24 * 60 * 60 * 1000) === 0;
-}
-
 export const MeetingCard = memo(function MeetingCard({ event, onAddNotes }: MeetingCardProps) {
   const start = parseISO(event.start);
   const end = parseISO(event.end);
   const isPast = end < new Date();
-  const allDay = checkAllDay(event);
+  const allDay = isAllDay(event);
 
   const otherAttendees = event.attendees
     .filter((a) => !event.isOrganizer || a.response !== "accepted")
