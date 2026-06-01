@@ -116,10 +116,14 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
       {/* Stats bar */}
       {briefing && !loadingEvents && <StatsBar stats={briefing.stats} overdueExternal={overdueExternal} />}
 
-      {/* Heads Up — full width */}
-      {briefing && briefing.headsUp.length > 0 && (
-        <HeadsUpSection items={briefing.headsUp} onNavigateTasks={onNavigateTasks} />
-      )}
+      {/* Heads Up — filter out alerts for tasks that have since been completed */}
+      {briefing && (() => {
+        const doneIds = new Set(tasks.filter(t => t.status === "done").map(t => t.id));
+        const liveItems = briefing.headsUp.filter(item => !item.taskId || !doneIds.has(item.taskId));
+        return liveItems.length > 0
+          ? <HeadsUpSection items={liveItems} onNavigateTasks={onNavigateTasks} />
+          : null;
+      })()}
 
       {/* Two-column body */}
       <div className="grid grid-cols-5 gap-6 items-start">

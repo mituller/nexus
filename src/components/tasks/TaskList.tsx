@@ -1,5 +1,5 @@
 import { useState, useMemo, memo, useRef, useEffect } from "react";
-import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon, FileText } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon, FileText, Search } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitLabStore } from "../../stores/gitlab";
@@ -36,6 +36,14 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
   const [filterPriority, setFilterPriority] = useState<Task["priority"] | "all">("all");
   const [filterSource, setFilterSource] = useState<string>("all");
   const [filterTag, setFilterTag] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Debounce the text search by 200ms
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim().toLowerCase()), 200);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -45,11 +53,12 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
 
   const visible = useMemo(() => {
     return [...tasks]
+      .filter((t) => !searchQuery || t.title.toLowerCase().includes(searchQuery) || (t.description ?? "").toLowerCase().includes(searchQuery))
       .filter((t) => filterPriority === "all" || t.priority === filterPriority)
       .filter((t) => filterSource === "all" || t.sourceType === filterSource)
       .filter((t) => !filterTag || t.tags.includes(filterTag))
       .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
-  }, [tasks, filterPriority, filterSource, filterTag]);
+  }, [tasks, searchQuery, filterPriority, filterSource, filterTag]);
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-8 w-full">
@@ -79,6 +88,16 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
       {/* Filter bar */}
       {tasks.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="relative">
+            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search tasks…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-6 pr-3 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500 w-44"
+            />
+          </div>
           <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value as Task["priority"] | "all")}
             className="px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500">
             <option value="all">All priorities</option>
@@ -97,8 +116,8 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
           {allTags.length > 0 && (
             <TagCombobox tags={allTags} value={filterTag} onChange={setFilterTag} />
           )}
-          {(filterPriority !== "all" || filterSource !== "all" || filterTag) && (
-            <button onClick={() => { setFilterPriority("all"); setFilterSource("all"); setFilterTag(""); }}
+          {(searchInput || filterPriority !== "all" || filterSource !== "all" || filterTag) && (
+            <button onClick={() => { setSearchInput(""); setFilterPriority("all"); setFilterSource("all"); setFilterTag(""); }}
               className="text-xs text-blue-500 hover:text-purple-700 underline">
               Clear filters
             </button>
