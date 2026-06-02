@@ -33,6 +33,7 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
   const { tasks, complete, remove, update } = useTaskStore();
   const { issues, mrs, connected: gitlabConnected, openIssue } = useGitLabStore();
   const [showForm, setShowForm] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [filterPriority, setFilterPriority] = useState<Task["priority"] | "all">("all");
   const [filterSource, setFilterSource] = useState<string>("all");
   const [filterTag, setFilterTag] = useState("");
@@ -53,12 +54,13 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
 
   const visible = useMemo(() => {
     return [...tasks]
+      .filter((t) => showCompleted || t.status !== "done")
       .filter((t) => !searchQuery || t.title.toLowerCase().includes(searchQuery) || (t.description ?? "").toLowerCase().includes(searchQuery))
       .filter((t) => filterPriority === "all" || t.priority === filterPriority)
       .filter((t) => filterSource === "all" || t.sourceType === filterSource)
       .filter((t) => !filterTag || t.tags.includes(filterTag))
       .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
-  }, [tasks, searchQuery, filterPriority, filterSource, filterTag]);
+  }, [tasks, showCompleted, searchQuery, filterPriority, filterSource, filterTag]);
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-8 w-full">
@@ -68,7 +70,12 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {tasks.filter(t => t.status !== "done").length} open
             {tasks.filter(t => t.status === "done").length > 0 && (
-              <span className="text-gray-400 dark:text-gray-600"> · {tasks.filter(t => t.status === "done").length} done</span>
+              <button
+                onClick={() => setShowCompleted(v => !v)}
+                className="text-gray-400 dark:text-gray-600 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+              >
+                {" · "}{tasks.filter(t => t.status === "done").length} completed {showCompleted ? "↑ hide" : "↓ show"}
+              </button>
             )}
             {gitlabConnected && issues.length > 0 && (
               <span className="ml-1">· {issues.length} GitLab</span>

@@ -11,7 +11,7 @@ import { format as dateFmt, addDays, parseISO, isBefore } from "date-fns";
 
 // Key = the first day shown in Week Ahead (tomorrow), so narrative matches the view exactly
 function currentWeekKey(): string {
-  return format(addDays(startOfDay(new Date()), 1), "yyyy-MM-dd");
+  return format(startOfDay(new Date()), "yyyy-MM-dd");
 }
 
 interface WeeklyStore {
@@ -52,7 +52,7 @@ export const useWeeklyStore = create<WeeklyStore>((set, get) => ({
     try {
       const now = new Date();
       // Match exactly what WeeklyPlanView shows: next 7 days starting tomorrow
-      const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(now), i + 1));
+      const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(now), i));
       const weekStart = days[0];
       const weekEnd = days[days.length - 1];
 

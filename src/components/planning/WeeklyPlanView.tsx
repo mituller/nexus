@@ -28,7 +28,7 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
   const hasAI = !!(cfg.profile && cfg.region && cfg.modelId);
 
   const now = new Date();
-  const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(now), i + 1));
+  const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(now), i));
 
   async function loadWeek() {
     setLoading(true);
