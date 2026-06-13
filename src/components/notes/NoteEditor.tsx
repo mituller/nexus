@@ -107,22 +107,30 @@ export function NoteEditor() {
     if (e.key === "Enter") {
       e.preventDefault();
       const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+      const lineEndRaw = val.indexOf("\n", lineStart);
+      const lineEndPos = lineEndRaw === -1 ? val.length : lineEndRaw;
       const currentLine = val.slice(lineStart, start);
+      const fullLine = val.slice(lineStart, lineEndPos);
 
-      // Match leading whitespace
       const indentMatch = currentLine.match(/^(\s+)/);
       const indent = indentMatch?.[1] ?? "";
 
-      // Match list markers (-, *, +, 1.) so the next line continues the list
       const listMatch = currentLine.match(/^(\s*)([-*+]|\d+\.)\s/);
       const continuation = listMatch ? listMatch[0] : indent;
 
-      // If on an empty list item, break out of list instead
-      const isEmptyListItem = listMatch && currentLine.trim() === listMatch[0].trimEnd();
-      const insert = isEmptyListItem ? "\n" : "\n" + continuation;
+      // Use fullLine so detection works regardless of cursor position within the line
+      const isEmptyListItem = /^(\s*)([-*+]|\d+\.)\s*$/.test(fullLine);
 
-      const newVal = val.slice(0, start) + insert + val.slice(end);
-      const newPos = start + insert.length;
+      if (isEmptyListItem) {
+        const newVal = val.slice(0, lineStart) + val.slice(lineEndPos);
+        ta.value = newVal;
+        ta.selectionStart = ta.selectionEnd = lineStart;
+        handleContentChange(newVal);
+        return;
+      }
+
+      const newVal = val.slice(0, start) + "\n" + continuation + val.slice(end);
+      const newPos = start + 1 + continuation.length;
       ta.value = newVal;
       ta.selectionStart = ta.selectionEnd = newPos;
       handleContentChange(newVal);
