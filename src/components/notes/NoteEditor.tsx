@@ -33,6 +33,7 @@ export function NoteEditor() {
   const [taskActions, setTaskActions] = useState<Record<number, "create" | "skip" | "update">>({});
   const [saving, setSaving] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (note) {
@@ -61,6 +62,72 @@ export function NoteEditor() {
   function handleTitleChange(v: string) {
     setTitle(v);
     scheduleSave(v, content, tagsInput);
+  }
+
+  function handleEditorKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const val = ta.value;
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+      const lineEndRaw = val.indexOf("\n", start);
+      const lineEndPos = lineEndRaw === -1 ? val.length : lineEndRaw;
+      const currentLine = val.slice(lineStart, lineEndPos);
+
+      if (/^(\s*)([-*+]|\d+\.)\s/.test(currentLine)) {
+        if (e.shiftKey) {
+          // De-indent: remove up to 2 leading spaces
+          const deindented = currentLine.replace(/^ {1,2}/, "");
+          const removed = currentLine.length - deindented.length;
+          const newVal = val.slice(0, lineStart) + deindented + val.slice(lineEndPos);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = Math.max(lineStart, start - removed);
+          handleContentChange(newVal);
+        } else {
+          // Indent: prepend 2 spaces to the line
+          const newVal = val.slice(0, lineStart) + "  " + currentLine + val.slice(lineEndPos);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = start + 2;
+          handleContentChange(newVal);
+        }
+      } else {
+        // Not a list item — insert spaces at cursor position
+        const newVal = val.slice(0, start) + "  " + val.slice(end);
+        ta.value = newVal;
+        ta.selectionStart = ta.selectionEnd = start + 2;
+        handleContentChange(newVal);
+      }
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+      const currentLine = val.slice(lineStart, start);
+
+      // Match leading whitespace
+      const indentMatch = currentLine.match(/^(\s+)/);
+      const indent = indentMatch?.[1] ?? "";
+
+      // Match list markers (-, *, +, 1.) so the next line continues the list
+      const listMatch = currentLine.match(/^(\s*)([-*+]|\d+\.)\s/);
+      const continuation = listMatch ? listMatch[0] : indent;
+
+      // If on an empty list item, break out of list instead
+      const isEmptyListItem = listMatch && currentLine.trim() === listMatch[0].trimEnd();
+      const insert = isEmptyListItem ? "\n" : "\n" + continuation;
+
+      const newVal = val.slice(0, start) + insert + val.slice(end);
+      const newPos = start + insert.length;
+      ta.value = newVal;
+      ta.selectionStart = ta.selectionEnd = newPos;
+      handleContentChange(newVal);
+      return;
+    }
   }
 
   function handleContentChange(v: string) {
@@ -311,8 +378,10 @@ export function NoteEditor() {
           />
         ) : (
           <textarea
+            ref={textareaRef}
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
+            onKeyDown={handleEditorKeyDown}
             placeholder="Start writing… (Markdown supported)"
             className="w-full h-full min-h-64 text-sm text-gray-800 dark:text-gray-100 leading-relaxed border-none outline-none resize-none bg-transparent placeholder-gray-300 dark:placeholder-gray-600 font-mono"
           />
