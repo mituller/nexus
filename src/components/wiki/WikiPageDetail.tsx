@@ -2,13 +2,32 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Edit3, Eye, Save, BookOpen } from "lucide-react";
 import { marked } from "marked";
 import { useWikiStore } from "../../stores/wiki";
+import { useSettingsStore } from "../../stores/settings";
 import { ENTITY_COLORS } from "./WikiPageList";
 import { WikiEntityType } from "../../types";
+import {
+  MDXEditor,
+  headingsPlugin,
+  listsPlugin,
+  quotePlugin,
+  thematicBreakPlugin,
+  markdownShortcutPlugin,
+  toolbarPlugin,
+  UndoRedo,
+  BoldItalicUnderlineToggles,
+  ListsToggle,
+  BlockTypeSelect,
+  Separator,
+  InsertThematicBreak,
+  diffSourcePlugin,
+  DiffSourceToggleWrapper,
+} from '@mdxeditor/editor';
 
 const ENTITY_TYPES: WikiEntityType[] = ["person", "project", "decision", "meeting", "concept", "general"];
 
 export function WikiPageDetail() {
   const { pages, activePageId, update, setActive } = useWikiStore();
+  const { settings } = useSettingsStore();
   const page = pages.find((p) => p.id === activePageId) ?? null;
 
   const [editing, setEditing] = useState(false);
@@ -143,12 +162,36 @@ export function WikiPageDetail() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 pb-8">
         {editing ? (
-          <textarea
-            value={content}
-            onChange={(e) => { setContent(e.target.value); scheduleAutoSave(title, e.target.value, entityType); }}
-            placeholder="Write wiki page content in Markdown. Use [[Other Page]] to cross-link."
-            className="w-full h-full min-h-64 text-sm text-gray-800 dark:text-gray-100 leading-relaxed border-none outline-none resize-none bg-transparent font-mono"
-          />
+          <div className="nexus-mdx-editor">
+            <MDXEditor
+              key={activePageId ?? 'none'}
+              markdown={page.content}
+              onChange={(v) => { setContent(v); scheduleAutoSave(title, v, entityType); }}
+              plugins={[
+                toolbarPlugin({ toolbarContents: () => (
+                  <DiffSourceToggleWrapper>
+                    <UndoRedo />
+                    <Separator />
+                    <BlockTypeSelect />
+                    <Separator />
+                    <BoldItalicUnderlineToggles />
+                    <Separator />
+                    <ListsToggle />
+                    <Separator />
+                    <InsertThematicBreak />
+                  </DiffSourceToggleWrapper>
+                )}),
+                headingsPlugin(),
+                listsPlugin(),
+                quotePlugin(),
+                thematicBreakPlugin(),
+                markdownShortcutPlugin(),
+                diffSourcePlugin({ viewMode: 'rich-text' }),
+              ]}
+              className={settings.darkMode ? 'dark-theme dark-editor' : ''}
+              contentEditableClassName="min-h-48 outline-none"
+            />
+          </div>
         ) : (
           <div
             className="wiki-content"
