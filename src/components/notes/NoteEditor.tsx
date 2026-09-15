@@ -8,6 +8,8 @@ import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
 import { extractFromNote, hasBedrockConfig } from "../../services/claude";
 import { linkNoteTask, markNoteExtracted, resetNoteWikiProcessed } from "../../services/notes";
+import { findSimilarTask, hasExactTask } from "../../utils/taskMatching";
+import { unescapeBrackets } from "../../utils/markdown";
 import { ExtractedNoteData } from "../../types";
 import '@mdxeditor/editor/style.css';
 import {
@@ -53,6 +55,11 @@ export function NoteEditor() {
   const [saving, setSaving] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<MDXEditorMethods>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
+  // MDXEditor fires onChange during initialization when it normalizes content.
+  // Ignore onChange for 400ms after a note switch to prevent corrupting the note.
+  const editorReadyRef = useRef(false);
+  const editorReadyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (note) {
@@ -64,6 +71,10 @@ export function NoteEditor() {
       setSearchQuery("");
       setExtracted(null);
       setSelectedTasks(new Set());
+      // Reset editor guard — ignore onChange for 400ms while MDXEditor initializes
+      editorReadyRef.current = false;
+      if (editorReadyTimerRef.current) clearTimeout(editorReadyTimerRef.current);
+      editorReadyTimerRef.current = setTimeout(() => { editorReadyRef.current = true; }, 400);
     }
   }, [activeNoteId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -84,35 +95,15 @@ export function NoteEditor() {
   }
 
   function handleContentChange(v: string) {
-    setContent(v);
-    scheduleSave(title, v, tagsInput);
+    if (!editorReadyRef.current) return;
+    const clean = unescapeBrackets(v);
+    setContent(clean);
+    scheduleSave(title, clean, tagsInput);
   }
 
   function handleTagsChange(v: string) {
     setTagsInput(v);
     scheduleSave(title, content, v);
-  }
-
-  // Word-based Jaccard similarity — ignores short words and punctuation
-  function taskSimilarity(a: string, b: string): number {
-    const normalize = (s: string) =>
-      s.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(w => w.length > 2);
-    const w1 = new Set(normalize(a));
-    const w2 = new Set(normalize(b));
-    if (w1.size === 0 || w2.size === 0) return 0;
-    const intersection = [...w1].filter(w => w2.has(w)).length;
-    return intersection / new Set([...w1, ...w2]).size;
-  }
-
-  function findSimilarTask(title: string): { task: Task; score: number } | null {
-    let best: { task: Task; score: number } | null = null;
-    for (const t of tasks.filter(t => t.status !== "done")) {
-      const score = taskSimilarity(title, t.title);
-      if (score >= 0.45 && (!best || score > best.score)) {
-        best = { task: t, score };
-      }
-    }
-    return best;
   }
 
   async function handleExtract() {
@@ -122,9 +113,8 @@ export function NoteEditor() {
       const result = await extractFromNote(cfg, title, content, note?.sourceType === "transcript");
 
       const enriched = result.tasks.map((t) => {
-        const exact = tasks.some(e => e.status !== "done" && e.title.toLowerCase().trim() === t.title.toLowerCase().trim());
-        if (exact) return { ...t, alreadyExists: true, similarTask: null as Task | null };
-        const match = findSimilarTask(t.title);
+        if (hasExactTask(t.title, tasks)) return { ...t, alreadyExists: true, similarTask: null as Task | null };
+        const match = findSimilarTask(t.title, tasks);
         return { ...t, alreadyExists: false, similarTask: match?.task ?? null, similarityScore: match?.score ?? 0 };
       });
 
@@ -213,6 +203,22 @@ export function NoteEditor() {
     return () => window.removeEventListener("keydown", onKey);
   }, [note]);
 
+  // Force spellcheck on MDXEditor's contenteditable (Lexical disables it by default)
+  useEffect(() => {
+    if (preview) return;
+    const wrapper = editorWrapperRef.current;
+    if (!wrapper) return;
+    const enable = () => {
+      wrapper.querySelectorAll<HTMLElement>('[contenteditable]').forEach(el => { el.spellcheck = true; });
+    };
+    const timer = setTimeout(enable, 50);
+    const observer = new MutationObserver((mutations) => {
+      if (mutations.some(m => m.addedNodes.length > 0)) enable();
+    });
+    observer.observe(wrapper, { childList: true, subtree: true });
+    return () => { clearTimeout(timer); observer.disconnect(); };
+  }, [preview, activeNoteId]);
+
   // Build highlighted HTML — wrap matches in <mark>
   const renderedHtml = useMemo(() => {
     const raw = marked.parse(content) as string;
@@ -262,7 +268,7 @@ export function NoteEditor() {
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 disabled:opacity-40 transition-colors"
             >
               {extracting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-              {note.extractedAt ? "Re-extract" : "Extract with AI"}
+              {note.extractedAt ? "Re-extract Tasks" : "Extract Tasks"}
             </button>
           )}
         </div>
@@ -322,19 +328,21 @@ export function NoteEditor() {
         />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
-        {preview ? (
+      {/* Content — preview scrolls the outer wrapper; edit mode lets MDXEditor scroll internally */}
+      {preview ? (
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
           <div
             className="wiki-content"
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />
-        ) : (
-          <div className="nexus-mdx-editor">
+        </div>
+      ) : (
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-6">
+          <div className="nexus-mdx-editor flex-1 min-h-0 flex flex-col" ref={editorWrapperRef}>
             <MDXEditor
               key={activeNoteId ?? 'none'}
               ref={editorRef}
-              markdown={note.content}
+              markdown={note.content.replace(/<[^>]*>/g, '')}
               onChange={handleContentChange}
               plugins={[
                 toolbarPlugin({ toolbarContents: () => (
@@ -361,8 +369,8 @@ export function NoteEditor() {
               contentEditableClassName="min-h-48 outline-none"
             />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* AI Extraction panel */}
       {extracted && (

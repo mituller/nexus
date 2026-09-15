@@ -11,6 +11,13 @@ import { isToday, startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, format 
 
 const STALE_MS = 15 * 60 * 1000; // 15 minutes
 
+export interface FeedStatus {
+  label: string;
+  ok: boolean;
+  count: number;      // events returned for the last fetched range
+  error?: string;
+}
+
 interface CachedRange {
   events: CalendarEvent[];
   fetchedAt: number;
@@ -23,6 +30,8 @@ interface CalendarStore {
   loadingEvents: boolean;
   loadingBriefing: boolean;
   connected: boolean;
+  /** Per-feed outcome of the last fetch, so an empty feed is distinguishable from a broken one. */
+  feedStatus: FeedStatus[];
   lastFetched: Date | null;
   rangeCache: Record<string, CachedRange>;
   fetchEvents: () => Promise<void>;
@@ -40,14 +49,24 @@ function mergeAndSort(events: CalendarEvent[]): CalendarEvent[] {
   return events.sort((a, b) => a.start.localeCompare(b.start));
 }
 
-async function fetchAllFeeds(start: Date, end: Date): Promise<CalendarEvent[]> {
+async function fetchAllFeeds(
+  start: Date,
+  end: Date,
+  onStatus?: (status: FeedStatus[]) => void
+): Promise<CalendarEvent[]> {
   const { settings } = useSettingsStore.getState();
   const enabled = settings.icalFeeds.filter((f) => f.enabled);
-  if (enabled.length === 0) return [];
+  if (enabled.length === 0) { onStatus?.([]); return []; }
 
   const results = await Promise.allSettled(
     enabled.map((feed) => fetchAndParseICalFeed(feed, start, end))
   );
+
+  // Record why each feed produced what it did — a feed that fails is otherwise
+  // indistinguishable from one that simply has no events in the range.
+  onStatus?.(results.map((r, i) => r.status === "fulfilled"
+    ? { label: enabled[i].label, ok: true, count: r.value.length }
+    : { label: enabled[i].label, ok: false, count: 0, error: String(r.reason?.message ?? r.reason) }));
 
   return results
     .filter((r): r is PromiseFulfilledResult<CalendarEvent[]> => r.status === "fulfilled")
@@ -61,6 +80,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   loadingEvents: false,
   loadingBriefing: false,
   connected: false,
+  feedStatus: [],
   lastFetched: null,
   rangeCache: {},
 
@@ -72,7 +92,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     set({ loadingEvents: true });
     try {
       const now = new Date();
-      const all = await fetchAllFeeds(startOfDay(now), endOfDay(addDays(now, 1)));
+      const all = await fetchAllFeeds(startOfDay(now), endOfDay(addDays(now, 1)), (feedStatus) => set({ feedStatus }));
 
       const todayStr = format(now, "yyyy-MM-dd");
       const tomorrowStr = format(addDays(now, 1), "yyyy-MM-dd");
@@ -126,7 +146,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       // Return cached immediately; silently refresh in background for next call
       setTimeout(async () => {
         try {
-          const events = mergeAndSort(await fetchAllFeeds(start, end));
+          const events = mergeAndSort(await fetchAllFeeds(start, end, (feedStatus) => set({ feedStatus })));
           set((state) => ({
             rangeCache: { ...state.rangeCache, [key]: { events, fetchedAt: Date.now() } },
           }));
@@ -136,7 +156,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     }
 
     // No fresh cache — fetch now
-    const events = mergeAndSort(await fetchAllFeeds(start, end));
+    const events = mergeAndSort(await fetchAllFeeds(start, end, (feedStatus) => set({ feedStatus })));
     set((state) => ({
       rangeCache: { ...state.rangeCache, [key]: { events, fetchedAt: Date.now() } },
       connected: true,

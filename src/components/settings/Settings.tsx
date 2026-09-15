@@ -5,6 +5,7 @@ import { useFolderWatcherStore } from "../../stores/folderWatcher";
 import { useSettingsStore } from "../../stores/settings";
 import { AppSettings, ICalFeed, FEED_COLORS } from "../../types";
 import { getDailyUsage, getMonthlyUsage, estimateCost, formatTokens, formatCost, PeriodUsage } from "../../services/tokenUsage";
+import { hasBedrockConfig } from "../../services/claude";
 
 export function Settings() {
   const { settings, update } = useSettingsStore();
@@ -293,8 +294,13 @@ function Field({ label, type, placeholder, value, onChange }: FieldProps) {
 }
 
 function WatchedFolderSection({ local, setLocal }: { local: AppSettings; setLocal: React.Dispatch<React.SetStateAction<AppSettings>> }) {
-  const { running, lastScanned, newNoteCount, scanNow, stopPolling } = useFolderWatcherStore();
+  const { running, lastScanned, lastError, newNoteCount, tasksCreated, scanNow, stopPolling } = useFolderWatcherStore();
   const [scanning, setScanning] = useState(false);
+  const bedrockReady = hasBedrockConfig({
+    profile: local.bedrockProfile,
+    region: local.bedrockRegion,
+    modelId: local.bedrockModelId,
+  });
 
   async function pickFolder() {
     const selected = await openDialog({ directory: true, multiple: false });
@@ -305,10 +311,16 @@ function WatchedFolderSection({ local, setLocal }: { local: AppSettings; setLoca
 
   async function handleScanNow() {
     setScanning(true);
-    const count = await scanNow();
+    // Scan the path shown in the form, even if it hasn't been saved yet.
+    const count = await scanNow(local.watchFolderPath);
     setScanning(false);
-    if (count === 0) alert("No new files found.");
-    else alert(`Imported ${count} file${count !== 1 ? "s" : ""} as notes.`);
+    const { lastError: err, tasksCreated: created } = useFolderWatcherStore.getState();
+    if (err) alert(`Scan failed: ${err}`);
+    else if (count === 0) alert("No new files found.");
+    else {
+      const taskNote = created > 0 ? ` Extracted ${created} task${created !== 1 ? "s" : ""}.` : "";
+      alert(`Imported ${count} file${count !== 1 ? "s" : ""} as notes.${taskNote}`);
+    }
   }
 
   return (
@@ -365,7 +377,10 @@ function WatchedFolderSection({ local, setLocal }: { local: AppSettings; setLoca
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Auto-extract tasks with AI</p>
-            <p className="text-xs text-gray-400 dark:text-gray-600">Runs AI extraction automatically on import</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600">Creates tasks from each imported note; duplicates are skipped</p>
+            {local.watchFolderAutoExtract && !bedrockReady && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Needs an AWS Bedrock profile, region, and model below</p>
+            )}
           </div>
           <button
             type="button"
@@ -389,8 +404,15 @@ function WatchedFolderSection({ local, setLocal }: { local: AppSettings; setLoca
           </button>
         )}
 
+        {lastError && (
+          <p className="text-xs text-red-600 dark:text-red-400 break-all">Last scan failed: {lastError}</p>
+        )}
+
         {newNoteCount > 0 && (
-          <p className="text-xs text-green-600 dark:text-green-400">{newNoteCount} new note{newNoteCount !== 1 ? "s" : ""} imported</p>
+          <p className="text-xs text-green-600 dark:text-green-400">
+            {newNoteCount} new note{newNoteCount !== 1 ? "s" : ""} imported
+            {tasksCreated > 0 && ` · ${tasksCreated} task${tasksCreated !== 1 ? "s" : ""} extracted`}
+          </p>
         )}
       </div>
     </section>

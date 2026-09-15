@@ -79,6 +79,18 @@ pub fn run() {
             sql: include_str!("../migrations/004_notes_extracted.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 5,
+            description: "unescape note content corrupted by MDXEditor",
+            sql: include_str!("../migrations/005_unescape_note_content.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 6,
+            description: "unescape wiki bracket escapes that broke wikilinks",
+            sql: include_str!("../migrations/006_unescape_wiki_brackets.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

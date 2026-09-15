@@ -1,4 +1,5 @@
-import { AlertTriangle, Calendar, Clock, Info, CheckCircle, ExternalLink, ArrowRight } from "lucide-react";
+import { AlertTriangle, Calendar, Clock, Info, CheckCircle, ExternalLink, ArrowRight, Check } from "lucide-react";
+import { memo } from "react";
 import { HeadsUpItem } from "../../types";
 import { openExternalUrl } from "../../utils/calendar";
 
@@ -32,10 +33,13 @@ const typeConfig: Record<HeadsUpItem["type"], { icon: React.ReactNode; bg: strin
 
 interface HeadsUpSectionProps {
   items: HeadsUpItem[];
-  onNavigateTasks?: () => void;
+  /** Jump to the Tasks view, revealing this task if one is given. */
+  onNavigateTasks?: (taskId?: string) => void;
+  /** Complete a task without leaving the dashboard. */
+  onCompleteTask?: (taskId: string) => void;
 }
 
-export function HeadsUpSection({ items, onNavigateTasks }: HeadsUpSectionProps) {
+export const HeadsUpSection = memo(function HeadsUpSection({ items, onNavigateTasks, onCompleteTask }: HeadsUpSectionProps) {
   return (
     <section>
       <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
@@ -67,14 +71,30 @@ export function HeadsUpSection({ items, onNavigateTasks }: HeadsUpSectionProps) 
           }
 
           if (item.taskId && onNavigateTasks) {
+            // Row body opens the task; the check button completes it in place.
+            // Buttons are siblings rather than nested, which is invalid HTML.
             return (
-              <button
+              <div
                 key={i}
-                onClick={onNavigateTasks}
-                className={`w-full flex gap-2.5 px-3 py-2.5 rounded-lg border text-left hover:brightness-95 transition-all ${cfg.bg} ${cfg.border}`}
+                className={`flex items-center gap-1 rounded-lg border transition-all ${cfg.bg} ${cfg.border}`}
               >
-                {content}
-              </button>
+                <button
+                  onClick={() => onNavigateTasks(item.taskId)}
+                  title="Open this task"
+                  className="flex-1 min-w-0 flex gap-2.5 px-3 py-2.5 text-left hover:brightness-95 transition-all rounded-l-lg"
+                >
+                  {content}
+                </button>
+                {onCompleteTask && (
+                  <button
+                    onClick={() => onCompleteTask(item.taskId!)}
+                    title="Mark done"
+                    className={`shrink-0 mr-2 p-1.5 rounded-md border border-transparent hover:bg-white/70 dark:hover:bg-gray-900/40 hover:border-current transition-colors ${cfg.linkColor}`}
+                  >
+                    <Check size={14} />
+                  </button>
+                )}
+              </div>
             );
           }
 
@@ -87,4 +107,4 @@ export function HeadsUpSection({ items, onNavigateTasks }: HeadsUpSectionProps) 
       </div>
     </section>
   );
-}
+});

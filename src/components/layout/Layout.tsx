@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "./Sidebar";
 import { Dashboard } from "../dashboard/Dashboard";
 import { TaskList } from "../tasks/TaskList";
@@ -20,13 +20,15 @@ type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" |
 
 export function Layout() {
   const [view, setView] = useState<View>("dashboard");
+  // Task to reveal in the Tasks view, set when arriving from Heads Up or search
+  const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
   const { setActive: setActiveNote, create: createNote } = useNotesStore();
   const { setActive: setActiveWikiPage } = useWikiStore();
   const { clearBadge: clearNotesBadge } = useFolderWatcherStore();
 
-  async function handleAddMeetingNote(event: CalendarEvent) {
+  const handleAddMeetingNote = useCallback(async function handleAddMeetingNote(event: CalendarEvent) {
     // Reuse existing note for this event if one already exists
     const { notes } = useNotesStore.getState();
     const existing = notes.find((n) => n.linkedEventId === event.id);
@@ -39,7 +41,7 @@ export function Layout() {
     const note = await createNote({ title, content, tags: ["meeting"], sourceType: "manual", linkedEventId: event.id, linkedEventTitle: event.title });
     setActiveNote(note.id);
     setView("notes");
-  }
+  }, [createNote, setActiveNote]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -56,9 +58,21 @@ export function Layout() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const handleNavigateTasks = useCallback((taskId?: string) => {
+    setView("tasks");
+    setFocusTaskId(taskId ?? null);
+  }, []);
+
+  const handleFocusHandled = useCallback(() => setFocusTaskId(null), []);
+
+  const handleOpenNoteFromTask = useCallback((noteId: string) => {
+    setActiveNote(noteId);
+    setView("notes");
+  }, [setActiveNote]);
+
   function handleSearchNavigate(type: "note" | "task" | "wiki" | "gitlab" | "ticket", id: string) {
     if (type === "note") { setView("notes"); setActiveNote(id); }
-    else if (type === "task") { setView("tasks"); }
+    else if (type === "task") { setView("tasks"); setFocusTaskId(id); }
     else if (type === "wiki") { setView("wiki"); setActiveWikiPage(id); }
     else if (type === "gitlab") { setView("tasks"); }
     else if (type === "ticket") { setView("tickets"); }
@@ -68,8 +82,8 @@ export function Layout() {
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
       <Sidebar current={view} onChange={(v) => { setView(v); if (v === "notes") clearNotesBadge(); }} onSearch={() => setSearchOpen(true)} onCapture={() => setCaptureOpen(true)} />
       <main className="flex-1 overflow-y-auto flex flex-col">
-        {view === "dashboard" && <Dashboard onAddMeetingNote={handleAddMeetingNote} onNavigateTasks={() => setView("tasks")} />}
-        {view === "tasks" && <TaskList onOpenNote={(noteId) => { setActiveNote(noteId); setView("notes"); }} />}
+        {view === "dashboard" && <Dashboard onAddMeetingNote={handleAddMeetingNote} onNavigateTasks={handleNavigateTasks} />}
+        {view === "tasks" && <TaskList onOpenNote={handleOpenNoteFromTask} focusTaskId={focusTaskId} onFocusHandled={handleFocusHandled} />}
         {view === "calendar" && <CalendarView onEventNoteRequest={() => setView("notes")} />}
         {view === "notes" && <NotesView />}
         {view === "wiki" && <WikiView />}

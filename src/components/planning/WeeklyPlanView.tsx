@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RefreshCw, Calendar, CheckSquare, Sparkles, GitBranch, Ticket } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, parseISO, isBefore } from "date-fns";
 import { GitLabItemRow } from "../gitlab/GitLabItemRow";
@@ -24,11 +24,12 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
   const [weekEvents, setWeekEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const cfg = { profile: settings.bedrockProfile, region: settings.bedrockRegion, modelId: settings.bedrockModelId };
-  const hasAI = !!(cfg.profile && cfg.region && cfg.modelId);
+  const hasAI = !!(settings.bedrockProfile && settings.bedrockRegion && settings.bedrockModelId);
 
-  const now = new Date();
-  const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(now), i));
+  // Stable for the session. Rebuilding these every render invalidated every
+  // derived list below, so nothing could be memoised.
+  const now = useMemo(() => new Date(), []);
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(startOfDay(now), i)), [now]);
 
   async function loadWeek() {
     setLoading(true);
@@ -47,25 +48,36 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
   const weekStart = days[0];
   const weekEnd = days[days.length - 1];
 
-  const openTasks = tasks.filter((t) => t.status !== "done");
+  // Overdue, or falling inside the visible week
+  const inWindow = useMemo(() => (iso: string | undefined) => {
+    if (!iso) return false;
+    const due = parseISO(iso);
+    return isBefore(due, now) || (due >= weekStart && due <= weekEnd);
+  }, [now, weekStart, weekEnd]);
 
-  const thisWeekTasks = sortTasks(openTasks.filter((t) => {
-    if (!t.dueDate) return false;
-    const due = parseISO(t.dueDate);
-    return (isBefore(due, now) || (due >= weekStart && due <= weekEnd));
-  }));
+  const thisWeekTasks = useMemo(
+    () => sortTasks(tasks.filter((t) => t.status !== "done" && inWindow(t.dueDate))),
+    [tasks, inWindow]);
 
-  const thisWeekIssues = issues.filter((i) => {
-    if (!i.dueDate) return false;
-    const due = parseISO(i.dueDate);
-    return (isBefore(due, now) || (due >= weekStart && due <= weekEnd));
-  });
+  const thisWeekIssues = useMemo(
+    () => issues.filter((i) => inWindow(i.dueDate)), [issues, inWindow]);
 
-  const thisWeekTickets = tickets.filter((t) => {
-    if (!t.dueBy) return false;
-    const due = parseISO(t.dueBy);
-    return (isBefore(due, now) || (due >= weekStart && due <= weekEnd));
-  });
+  const thisWeekTickets = useMemo(
+    () => tickets.filter((t) => inWindow(t.dueBy)), [tickets, inWindow]);
+
+  // Bucket events by local day once (O(n)) instead of scanning and re-parsing
+  // the whole list for each of the seven days (O(days x n) with a format() call
+  // on every pair).
+  const eventsByDay = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const e of weekEvents) {
+      const key = format(new Date(e.start), "yyyy-MM-dd");
+      const bucket = map.get(key);
+      if (bucket) bucket.push(e); else map.set(key, [e]);
+    }
+    for (const bucket of map.values()) bucket.sort((a, b) => a.start.localeCompare(b.start));
+    return map;
+  }, [weekEvents]);
 
   return (
     <div className="px-8 py-6 space-y-6">
@@ -126,9 +138,7 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
           {loading && <p className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">Loading…</p>}
           {days.map((day) => {
             const str = format(day, "yyyy-MM-dd");
-            const dayEvents = weekEvents
-              .filter((e) => format(new Date(e.start), "yyyy-MM-dd") === str)
-              .sort((a, b) => a.start.localeCompare(b.start));
+            const dayEvents = eventsByDay.get(str) ?? [];
             return (
               <div key={str}>
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-500 mb-2">{format(day, "EEEE, MMM d")}</p>

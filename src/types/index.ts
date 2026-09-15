@@ -140,6 +140,8 @@ export interface AppSettings {
   watchFolderEnabled: boolean;
   watchFolderPath: string;
   watchFolderAutoExtract: boolean;
+  // Wiki UI state — which sidebar categories are expanded. Absent key = expanded.
+  wikiExpandedCategories: Partial<Record<WikiEntityType, boolean>>;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -160,6 +162,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   watchFolderEnabled: false,
   watchFolderPath: "",
   watchFolderAutoExtract: false,
+  wikiExpandedCategories: {},
 };
 
 export const FEED_COLORS = [

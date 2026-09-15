@@ -17,6 +17,21 @@ function parseJson<T>(raw: string): T | null {
 
 // ─── Ingest ─────────────────────────────────────────────────────────────────
 
+// Extract unique named speakers from transcript-style content (**Name** lines)
+function extractSpeakers(content: string): string[] {
+  const seen = new Set<string>();
+  for (const m of content.matchAll(/^\*{1,2}([^*\n]+)\*{1,2}\s*$/gm)) {
+    const name = m[1].trim();
+    if (name && !/^Speaker\s*\d*$/i.test(name)) seen.add(name);
+  }
+  return [...seen];
+}
+
+// Strip HTML tags from content before sending to AI (removes timestamp spans, cleans input)
+function stripHtmlTags(content: string): string {
+  return content.replace(/<[^>]*>/g, '');
+}
+
 export async function ingestNoteToWiki(
   cfg: BedrockConfig,
   noteTitle: string,
@@ -26,12 +41,19 @@ export async function ingestNoteToWiki(
   const existingList = existingPageTitles.slice(0, 50).join(", ") || "none";
   const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
+  // Pre-extract speakers from full content before truncation
+  const speakers = extractSpeakers(noteContent);
+  const speakerLine = speakers.length > 0 ? `PARTICIPANTS: ${speakers.join(", ")}\n` : "";
+
+  // Strip HTML tags to reduce noise and save token budget for more content
+  const cleanedContent = stripHtmlTags(noteContent);
+
   const prompt = `You maintain a personal knowledge wiki. Extract wiki-worthy entities from this note and generate wiki page content for each one.
 
 NOTE TITLE: ${noteTitle}
 NOTE DATE: ${today}
-NOTE CONTENT:
-${noteContent.slice(0, 6000)}
+${speakerLine}NOTE CONTENT:
+${cleanedContent.slice(0, 7000)}
 
 EXISTING WIKI PAGES (titles only): ${existingList}
 
@@ -47,23 +69,25 @@ Return ONLY valid JSON (no markdown fences):
   ]
 }
 
-Standard rules:
-- Only extract SIGNIFICANT entities: named people, named projects, key decisions, recurring concepts
+Rules:
+- Always extract named people (from PARTICIPANTS and content), named projects, and key decisions as separate pages
 - Minimum 3-4 sentences of useful content per page — skip trivial mentions
 - isNew: false if the title matches an existing wiki page, true if brand new
 - For existing pages, write the full updated page integrating new info
 - Cross-link related entities using [[Page Title]] syntax
-- Max 6 pages per note
+- Max 8 pages per note
 
-MEETING ENTITY RULES:
-If this note is from a RECURRING meeting (daily standup, weekly check-in, 1:1, team meeting, etc.), generate TWO pages:
-1. DATED page — title: "Meeting Name – ${today}", entityType: "meeting", isNew: true always. Content: full notes from this specific occurrence (attendees, topics discussed, decisions, action items).
-2. PARENT SUMMARY page — title: "Meeting Name" (no date), entityType: "meeting", isNew: false if already in existing pages list. Content: purpose of the meeting, regular attendees, RECURRING themes and patterns seen across multiple occurrences, standing agenda items. Do NOT include per-session details here — keep it as a high-level summary that stays relevant over time. Update this summary based on what this session reveals about patterns.
+MEETING RULES:
+If this note is a meeting transcript or meeting notes:
+- ALWAYS create person pages for named participants (role, context from this meeting)
+- ALWAYS create a project page for the project being discussed
+- ADDITIONALLY create meeting page(s) as follows:
+  - RECURRING meeting (standup, weekly check-in, 1:1, etc.): TWO pages —
+    1. DATED page: "Meeting Name – ${today}", entityType "meeting", isNew true. Full notes from this session.
+    2. PARENT SUMMARY: "Meeting Name" (no date), entityType "meeting". Purpose, regular attendees, recurring themes. No per-session details.
+  - ONE-OFF meeting: ONE dated page — "Meeting Name – ${today}", entityType "meeting", isNew true. Full notes.`;
 
-For ONE-OFF meetings, create a single dated page only (no parent summary needed).
-For non-recurring meeting content, use standard rules above.`;
-
-  const raw = await callClaudePrompt(cfg, prompt, 3000);
+  const raw = await callClaudePrompt(cfg, prompt, 4000);
   const parsed = parseJson<{ pages: WikiPageDraft[] }>(raw);
   return parsed?.pages ?? [];
 }

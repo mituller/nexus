@@ -11,16 +11,33 @@ import { MonthView } from "./MonthView";
 
 function FeedLegend() {
   const { settings } = useSettingsStore();
+  const feedStatus = useCalendarStore((s) => s.feedStatus);
   const enabled = settings.icalFeeds.filter((f) => f.enabled);
   if (enabled.length === 0) return null;
+
+  // A feed with no events in view is otherwise indistinguishable from one that
+  // failed to load, so show the count and surface failures explicitly.
+  const statusFor = (label: string) => feedStatus.find((s) => s.label === label);
+
   return (
     <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-500">
-      {enabled.map((f) => (
-        <span key={f.id} className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: f.color }} />
-          {f.label}
-        </span>
-      ))}
+      {enabled.map((f) => {
+        const st = statusFor(f.label);
+        return (
+          <span key={f.id} className="flex items-center gap-1.5" title={st?.error ?? undefined}>
+            <span
+              className="w-2.5 h-2.5 rounded-full inline-block"
+              style={{ backgroundColor: st && !st.ok ? "#ef4444" : f.color }}
+            />
+            {f.label}
+            {st && (
+              <span className={st.ok ? "text-gray-400 dark:text-gray-600" : "text-red-500 font-medium"}>
+                {st.ok ? st.count : "failed"}
+              </span>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }

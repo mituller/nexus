@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, Trash2, ChevronRight, FolderOpen, Folder } from "lucide-react";
 import { useWikiStore } from "../../stores/wiki";
+import { useSettingsStore } from "../../stores/settings";
 import { WikiEntityType, WikiPage } from "../../types";
+
+// Categories open unless the user has collapsed them; the choice is persisted
+// in AppSettings.wikiExpandedCategories.
+const CATEGORY_DEFAULT_OPEN = true;
 
 const ENTITY_ORDER: WikiEntityType[] = ["person", "project", "decision", "meeting", "concept", "general"];
 const ENTITY_LABELS: Record<WikiEntityType, string> = {
@@ -74,7 +79,11 @@ interface WikiPageListProps {
 }
 
 export function WikiPageList({ onNewPage }: WikiPageListProps) {
-  const { pages, activePageId, setActive, remove, expandedCategories, toggleCategory, expandCategories } = useWikiStore();
+  const { pages, activePageId, setActive, remove, expandedCategories, toggleCategory, expandCategories, hydrateExpanded } = useWikiStore();
+  const settingsLoaded = useSettingsStore((s) => s.loaded);
+
+  // Apply the saved collapse state once settings have loaded
+  useEffect(() => { if (settingsLoaded) hydrateExpanded(); }, [settingsLoaded, hydrateExpanded]);
   const [search, setSearch] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -131,14 +140,14 @@ export function WikiPageList({ onNewPage }: WikiPageListProps) {
       <div className="flex-1 overflow-y-auto pb-4">
         {filtered.length === 0 && (
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-8">
-            {search ? "No matching pages." : "No wiki pages yet. Use Ingest to generate them from your notes."}
+            {search ? "No matching pages." : "No wiki pages yet. Use Extract Notes to generate them from your notes."}
           </p>
         )}
 
         {ENTITY_ORDER.map((type) => {
           const group = grouped[type];
           if (group.length === 0) return null;
-          const isOpen = expandedCategories[type] ?? false;
+          const isOpen = expandedCategories[type] ?? CATEGORY_DEFAULT_OPEN;
 
           return (
             <div key={type} className="mb-0.5">

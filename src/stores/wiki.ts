@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import { WikiPage, WikiEntityType } from "../types";
 import * as db from "../services/wiki";
+import { useSettingsStore } from "./settings";
 
 interface WikiStore {
   pages: WikiPage[];
   activePageId: string | null;
   loading: boolean;
   expandedCategories: Partial<Record<WikiEntityType, boolean>>;
+  hydratedExpanded: boolean;
+  hydrateExpanded: () => void;
   toggleCategory: (type: WikiEntityType) => void;
   expandCategories: (types: WikiEntityType[]) => void;
   load: () => Promise<void>;
@@ -21,11 +24,24 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
   pages: [],
   activePageId: null,
   loading: false,
-  expandedCategories: {}, // all start collapsed
+  // Absent key means expanded; see CATEGORY_DEFAULT_OPEN in WikiPageList.
+  expandedCategories: {},
+  hydratedExpanded: false,
+
+  // Settings load asynchronously, so pull the saved collapse state in once it's ready.
+  hydrateExpanded: () => {
+    if (get().hydratedExpanded) return;
+    const { settings, loaded } = useSettingsStore.getState();
+    if (!loaded) return;
+    set({ expandedCategories: settings.wikiExpandedCategories ?? {}, hydratedExpanded: true });
+  },
 
   toggleCategory: (type) => {
-    const current = get().expandedCategories[type] ?? false;
-    set((s) => ({ expandedCategories: { ...s.expandedCategories, [type]: !current } }));
+    const current = get().expandedCategories[type] ?? true;
+    const next = { ...get().expandedCategories, [type]: !current };
+    set({ expandedCategories: next });
+    // Persist so the choice survives a restart
+    void useSettingsStore.getState().update({ wikiExpandedCategories: next });
   },
 
   expandCategories: (types) => {

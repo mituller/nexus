@@ -27,9 +27,13 @@ const GITLAB_PRIORITY_COLOR: Record<NonNullable<GitLabIssue["priority"]>, string
 
 interface TaskListProps {
   onOpenNote?: (noteId: string) => void;
+  /** Task to reveal when arriving from Heads Up or search. */
+  focusTaskId?: string | null;
+  /** Called once the focus request has been handled, so it doesn't re-fire. */
+  onFocusHandled?: () => void;
 }
 
-export function TaskList({ onOpenNote }: TaskListProps = {}) {
+export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListProps = {}) {
   const { tasks, complete, remove, update } = useTaskStore();
   const { issues, mrs, connected: gitlabConnected, openIssue } = useGitLabStore();
   const [showForm, setShowForm] = useState(false);
@@ -39,12 +43,39 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
   const [filterTag, setFilterTag] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // Debounce the text search by 200ms
   useEffect(() => {
     const t = setTimeout(() => setSearchQuery(searchInput.trim().toLowerCase()), 200);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  // Arriving from a Heads Up alert or search: clear any filter that would hide
+  // the task, then scroll it into view and highlight it briefly.
+  useEffect(() => {
+    if (!focusTaskId) return;
+    const target = tasks.find((t) => t.id === focusTaskId);
+    if (!target) { onFocusHandled?.(); return; }
+
+    setSearchInput("");
+    setSearchQuery("");
+    setFilterPriority("all");
+    setFilterSource("all");
+    setFilterTag("");
+    if (target.status === "done") setShowCompleted(true);
+    setHighlightId(focusTaskId);
+
+    // Wait for the filter reset to render before measuring
+    const scrollTimer = setTimeout(() => {
+      document
+        .querySelector(`[data-task-id="${focusTaskId}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+    const clearTimer = setTimeout(() => setHighlightId(null), 2400);
+    onFocusHandled?.();
+    return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+  }, [focusTaskId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -144,7 +175,7 @@ export function TaskList({ onOpenNote }: TaskListProps = {}) {
       ) : (
         <div className="space-y-1">
           {visible.map((task) => (
-            <TaskRow key={task.id} task={task} onComplete={complete} onDelete={remove} onUpdate={update} onOpenNote={onOpenNote} />
+            <TaskRow key={task.id} task={task} onComplete={complete} onDelete={remove} onUpdate={update} onOpenNote={onOpenNote} highlight={task.id === highlightId} />
           ))}
         </div>
       )}
@@ -190,9 +221,10 @@ interface TaskRowProps {
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onOpenNote?: (noteId: string) => void;
+  highlight?: boolean;
 }
 
-const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, onOpenNote }: TaskRowProps) {
+const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, onOpenNote, highlight }: TaskRowProps) {
   const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== "done";
   const isDone = task.status === "done";
   const { settings } = useSettingsStore();
@@ -223,8 +255,10 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
   }
 
   return (
-    <div className={`group flex items-start gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border transition-colors
-      ${isDone ? "border-gray-100 dark:border-gray-700 opacity-60" : "border-gray-200 dark:border-gray-700 hover:border-gray-300"}`}>
+    <div
+      data-task-id={task.id}
+      className={`group flex items-start gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border transition-all
+      ${highlight ? "border-purple-400 ring-2 ring-purple-300 dark:ring-purple-700" : isDone ? "border-gray-100 dark:border-gray-700 opacity-60" : "border-gray-200 dark:border-gray-700 hover:border-gray-300"}`}>
       <input
         type="checkbox"
         checked={isDone}

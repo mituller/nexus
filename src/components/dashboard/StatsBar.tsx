@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { DailyBriefing } from "../../types";
 
 interface StatsBarProps {
@@ -5,7 +6,7 @@ interface StatsBarProps {
   overdueExternal?: number; // overdue GitLab items + Freshservice tickets
 }
 
-export function StatsBar({ stats, overdueExternal = 0 }: StatsBarProps) {
+export const StatsBar = memo(function StatsBar({ stats, overdueExternal = 0 }: StatsBarProps) {
   const totalOverdue = stats.overdueTasks + overdueExternal;
 
   const items = [
@@ -25,4 +26,4 @@ export function StatsBar({ stats, overdueExternal = 0 }: StatsBarProps) {
       ))}
     </div>
   );
-}
+});

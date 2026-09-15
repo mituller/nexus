@@ -175,7 +175,7 @@ export function WikiView() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors
                   ${panel === "ingest" ? "bg-purple-600 text-white border-purple-600" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
               >
-                <Sparkles size={12} /> Ingest
+                <Sparkles size={12} /> Extract Notes
                 {totalUnprocessed > 0 && panel !== "ingest" && (
                   <span className="ml-0.5 bg-purple-100 text-purple-700 rounded-full px-1.5 text-xs font-medium">
                     {totalUnprocessed}
@@ -237,7 +237,7 @@ export function WikiView() {
           <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-purple-50 px-5 py-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1.5">
-                <Sparkles size={14} /> Ingesting notes into wiki…
+                <Sparkles size={14} /> Extracting notes into wiki…
               </h3>
               {ingestProgress.done === ingestProgress.total && (
                 <button onClick={() => setPanel("none")} className="text-purple-400 hover:text-purple-600">

@@ -5,6 +5,7 @@ import { useWikiStore } from "../../stores/wiki";
 import { useSettingsStore } from "../../stores/settings";
 import { ENTITY_COLORS } from "./WikiPageList";
 import { WikiEntityType } from "../../types";
+import { unescapeBrackets } from "../../utils/markdown";
 import {
   MDXEditor,
   headingsPlugin,
@@ -36,6 +37,7 @@ export function WikiPageDetail() {
   const [entityType, setEntityType] = useState<WikiEntityType>("general");
   const [dirty, setDirty] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (page) {
@@ -64,7 +66,7 @@ export function WikiPageDetail() {
   );
 
   const renderedHtml = useMemo(() => {
-    const md = content || "*No content yet. Switch to Edit mode to add content.*";
+    const md = unescapeBrackets(content) || "*No content yet. Switch to Edit mode to add content.*";
     const linked = md.replace(/\[\[([^\]]+)\]\]/g, (_, t) => {
       const exists = pageTitleSet.has(t.toLowerCase());
       const cls = exists
@@ -83,6 +85,22 @@ export function WikiPageDetail() {
     const found = pages.find((p) => p.title.toLowerCase() === title.toLowerCase());
     if (found) setActive(found.id);
   }, [pages, setActive]);
+
+  // Force spellcheck on MDXEditor's contenteditable (Lexical disables it by default)
+  useEffect(() => {
+    if (!editing) return;
+    const wrapper = editorWrapperRef.current;
+    if (!wrapper) return;
+    const enable = () => {
+      wrapper.querySelectorAll<HTMLElement>('[contenteditable]').forEach(el => { el.spellcheck = true; });
+    };
+    const timer = setTimeout(enable, 50);
+    const observer = new MutationObserver((mutations) => {
+      if (mutations.some(m => m.addedNodes.length > 0)) enable();
+    });
+    observer.observe(wrapper, { childList: true, subtree: true });
+    return () => { clearTimeout(timer); observer.disconnect(); };
+  }, [editing, activePageId]);
 
   if (!page) {
     return (
@@ -159,14 +177,18 @@ export function WikiPageDetail() {
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 pb-8">
-        {editing ? (
-          <div className="nexus-mdx-editor">
+      {/* Content — edit mode lets MDXEditor scroll internally; view mode scrolls the outer wrapper */}
+      {editing ? (
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-6">
+          <div className="nexus-mdx-editor flex-1 min-h-0 flex flex-col" ref={editorWrapperRef}>
             <MDXEditor
               key={activePageId ?? 'none'}
               markdown={page.content}
-              onChange={(v) => { setContent(v); scheduleAutoSave(title, v, entityType); }}
+              onChange={(v) => {
+                const clean = unescapeBrackets(v);
+                setContent(clean);
+                scheduleAutoSave(title, clean, entityType);
+              }}
               plugins={[
                 toolbarPlugin({ toolbarContents: () => (
                   <DiffSourceToggleWrapper>
@@ -192,14 +214,16 @@ export function WikiPageDetail() {
               contentEditableClassName="min-h-48 outline-none"
             />
           </div>
-        ) : (
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-6 pb-8">
           <div
             className="wiki-content"
             onClick={handleContentClick}
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

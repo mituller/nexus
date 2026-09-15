@@ -1,6 +1,6 @@
 [package]
 name = "nexus"
-version = "0.1.0"
+version = "0.1.6"
 description = "Nexus Knowledge Management"
 authors = []
 edition = "2021"
@@ -16,7 +16,9 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 tauri-plugin-shell = "2"
-tauri-plugin-http = "2"
+# rustls-tls-native-roots adds the macOS system trust store to the default
+# webpki roots, so TLS-intercepting corporate proxies (Zscaler) are trusted.
+tauri-plugin-http = { version = "2", features = ["rustls-tls-native-roots"] }
 tauri-plugin-store = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-fs = "2"
