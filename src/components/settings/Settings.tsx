@@ -6,6 +6,7 @@ import { useSettingsStore } from "../../stores/settings";
 import { AppSettings, ICalFeed, FEED_COLORS } from "../../types";
 import { getDailyUsage, getMonthlyUsage, estimateCost, formatTokens, formatCost, PeriodUsage } from "../../services/tokenUsage";
 import { aiConfigFromSettings, hasAIConfig } from "../../services/claude";
+import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 
 export function Settings() {
   const { settings, update } = useSettingsStore();
@@ -184,7 +185,10 @@ export function Settings() {
               <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">https://openrouter.ai/keys</code>.
             </p>
             <Field label="API Key" type="password" placeholder="sk-or-v1-…" {...field("openRouterApiKey")} />
-            <Field label="Model" type="text" placeholder="~anthropic/claude-sonnet-latest" {...field("openRouterModel")} />
+            <OpenRouterModelPicker
+              value={local.openRouterModel}
+              onChange={(modelId) => setLocal((p) => ({ ...p, openRouterModel: modelId }))}
+            />
           </>
         ) : (
           <>
