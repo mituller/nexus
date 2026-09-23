@@ -1,5 +1,5 @@
 import { BedrockConfig } from "../types";
-import { extractFromNote, hasBedrockConfig } from "./claude";
+import { extractFromNote, hasAIConfig } from "./claude";
 import { linkNoteTask, markNoteExtracted } from "./notes";
 import { useTaskStore } from "../stores/tasks";
 import { useNotesStore } from "../stores/notes";
@@ -24,7 +24,7 @@ export async function autoExtractNote(
   content: string,
   isTranscript: boolean
 ): Promise<AutoExtractResult> {
-  if (!hasBedrockConfig(cfg)) throw new Error("Bedrock is not configured");
+  if (!hasAIConfig(cfg)) throw new Error("AI is not configured (check Settings → Claude AI)");
 
   const result = await extractFromNote(cfg, title, content, isTranscript);
 

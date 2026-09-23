@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { format, startOfDay } from "date-fns";
 import { getCachedWeeklyNarrative, saveCachedWeeklyNarrative } from "../services/store";
 import { callClaude } from "../services/bedrock";
+import { aiConfigFromSettings, hasAIConfig } from "../services/claude";
 import { useSettingsStore } from "./settings";
 import { useCalendarStore } from "./calendar";
 import { useTaskStore } from "./tasks";
@@ -40,8 +41,8 @@ export const useWeeklyStore = create<WeeklyStore>((set, get) => ({
   // Generate (or regenerate) the weekly narrative
   generate: async (force = false) => {
     const { settings } = useSettingsStore.getState();
-    const cfg = { profile: settings.bedrockProfile, region: settings.bedrockRegion, modelId: settings.bedrockModelId };
-    if (!cfg.profile || !cfg.region || !cfg.modelId) return;
+    const cfg = aiConfigFromSettings(settings);
+    if (!hasAIConfig(cfg)) return;
 
     const weekKey = currentWeekKey();
 

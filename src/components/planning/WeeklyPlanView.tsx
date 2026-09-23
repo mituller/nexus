@@ -9,6 +9,7 @@ import { useSettingsStore } from "../../stores/settings";
 import { useGitLabStore } from "../../stores/gitlab";
 import { useFreshserviceStore } from "../../stores/freshservice";
 import { useWeeklyStore } from "../../stores/weekly";
+import { aiConfigFromSettings, hasAIConfig } from "../../services/claude";
 import { MeetingCard } from "../dashboard/MeetingCard";
 import { TaskItem, sortTasks } from "../ui/TaskItem";
 import { CalendarEvent } from "../../types";
@@ -24,7 +25,7 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
   const [weekEvents, setWeekEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const hasAI = !!(settings.bedrockProfile && settings.bedrockRegion && settings.bedrockModelId);
+  const hasAI = hasAIConfig(aiConfigFromSettings(settings));
 
   // Stable for the session. Rebuilding these every render invalidated every
   // derived list below, so nothing could be memoised.

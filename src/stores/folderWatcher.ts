@@ -3,7 +3,7 @@ import { useSettingsStore } from "./settings";
 import { useNotesStore } from "./notes";
 import { scanFolder, processFile, moveToProcessed } from "../services/folderWatcher";
 import { autoExtractNote } from "../services/autoExtract";
-import { hasBedrockConfig } from "../services/claude";
+import { aiConfigFromSettings, hasAIConfig } from "../services/claude";
 
 interface FolderWatcherStore {
   running: boolean;
@@ -62,11 +62,7 @@ export const useFolderWatcherStore = create<FolderWatcherStore>((set, get) => ({
       if (files.length === 0) return 0;
 
       const { create: createNote } = useNotesStore.getState();
-      const cfg = {
-        profile: settings.bedrockProfile,
-        region: settings.bedrockRegion,
-        modelId: settings.bedrockModelId,
-      };
+      const cfg = aiConfigFromSettings(settings);
       let imported = 0;
 
       for (const fileName of files) {
@@ -92,7 +88,7 @@ export const useFolderWatcherStore = create<FolderWatcherStore>((set, get) => ({
 
         // Auto-extract tasks with AI, if enabled. A failure here must not
         // abort the rest of the import — the note is already saved.
-        if (settings.watchFolderAutoExtract && hasBedrockConfig(cfg)) {
+        if (settings.watchFolderAutoExtract && hasAIConfig(cfg)) {
           try {
             const { tasksCreated } = await autoExtractNote(
               cfg,

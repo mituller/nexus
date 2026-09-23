@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { CalendarEvent, DailyBriefing } from "../types";
 import { fetchAndParseICalFeed } from "../services/ical";
-import { generateDailyBriefing, hasBedrockConfig } from "../services/claude";
+import { generateDailyBriefing, aiConfigFromSettings, hasAIConfig } from "../services/claude";
 import { getCachedBriefing, saveCachedBriefing } from "../services/store";
 import { useSettingsStore } from "./settings";
 import { useTaskStore } from "./tasks";
@@ -185,8 +185,8 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     }
 
     const { settings } = useSettingsStore.getState();
-    const cfg = { profile: settings.bedrockProfile, region: settings.bedrockRegion, modelId: settings.bedrockModelId };
-    if (!hasBedrockConfig(cfg)) return;
+    const cfg = aiConfigFromSettings(settings);
+    if (!hasAIConfig(cfg)) return;
 
     const { todayEvents, tomorrowEvents } = get();
     const { tasks } = useTaskStore.getState();

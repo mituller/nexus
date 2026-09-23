@@ -5,7 +5,7 @@ import { useFolderWatcherStore } from "../../stores/folderWatcher";
 import { useSettingsStore } from "../../stores/settings";
 import { AppSettings, ICalFeed, FEED_COLORS } from "../../types";
 import { getDailyUsage, getMonthlyUsage, estimateCost, formatTokens, formatCost, PeriodUsage } from "../../services/tokenUsage";
-import { hasBedrockConfig } from "../../services/claude";
+import { aiConfigFromSettings, hasAIConfig } from "../../services/claude";
 
 export function Settings() {
   const { settings, update } = useSettingsStore();
@@ -154,16 +154,50 @@ export function Settings() {
       {/* Watched Folder */}
       <WatchedFolderSection local={local} setLocal={setLocal} />
 
-      {/* AWS Bedrock */}
-      <Section title="Claude AI — via AWS Bedrock">
-        <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
-          Uses your existing AWS profile. Run{" "}
-          <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">aws sso login --profile {local.bedrockProfile || "freshservice-bedrock"}</code>{" "}
-          before using AI features if your session has expired.
-        </p>
-        <Field label="AWS Profile" type="text" placeholder="freshservice-bedrock" {...field("bedrockProfile")} />
-        <Field label="AWS Region" type="text" placeholder="us-east-1" {...field("bedrockRegion")} />
-        <Field label="Model ID" type="text" placeholder="us.anthropic.claude-sonnet-4-6" {...field("bedrockModelId")} />
+      {/* Claude AI */}
+      <Section title="Claude AI">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1">Provider</label>
+          <select
+            value={local.aiProvider}
+            onChange={(e) => setLocal((p) => ({ ...p, aiProvider: e.target.value as "bedrock" | "openrouter" }))}
+            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+          >
+            <option value="bedrock">AWS Bedrock</option>
+            <option value="openrouter">OpenRouter</option>
+          </select>
+        </div>
+
+        {local.aiProvider === "openrouter" ? (
+          <>
+            <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
+              Routes AI calls through{" "}
+              <a
+                href="https://openrouter.ai"
+                className="text-purple-600 hover:underline"
+                target="_blank"
+                rel="noreferrer"
+              >
+                openrouter.ai
+              </a>
+              {" "}— pick any OpenAI-compatible model. Get an API key at{" "}
+              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">https://openrouter.ai/keys</code>.
+            </p>
+            <Field label="API Key" type="password" placeholder="sk-or-v1-…" {...field("openRouterApiKey")} />
+            <Field label="Model" type="text" placeholder="~anthropic/claude-sonnet-latest" {...field("openRouterModel")} />
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
+              Uses your existing AWS profile. Run{" "}
+              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">aws sso login --profile {local.bedrockProfile || "freshservice-bedrock"}</code>{" "}
+              before using AI features if your session has expired.
+            </p>
+            <Field label="AWS Profile" type="text" placeholder="freshservice-bedrock" {...field("bedrockProfile")} />
+            <Field label="AWS Region" type="text" placeholder="us-east-1" {...field("bedrockRegion")} />
+            <Field label="Model ID" type="text" placeholder="us.anthropic.claude-sonnet-4-6" {...field("bedrockModelId")} />
+          </>
+        )}
         <TokenUsageDisplay />
       </Section>
 
@@ -296,11 +330,7 @@ function Field({ label, type, placeholder, value, onChange }: FieldProps) {
 function WatchedFolderSection({ local, setLocal }: { local: AppSettings; setLocal: React.Dispatch<React.SetStateAction<AppSettings>> }) {
   const { running, lastScanned, lastError, newNoteCount, tasksCreated, scanNow, stopPolling } = useFolderWatcherStore();
   const [scanning, setScanning] = useState(false);
-  const bedrockReady = hasBedrockConfig({
-    profile: local.bedrockProfile,
-    region: local.bedrockRegion,
-    modelId: local.bedrockModelId,
-  });
+  const aiReady = hasAIConfig(aiConfigFromSettings(local));
 
   async function pickFolder() {
     const selected = await openDialog({ directory: true, multiple: false });
@@ -378,8 +408,12 @@ function WatchedFolderSection({ local, setLocal }: { local: AppSettings; setLoca
           <div>
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Auto-extract tasks with AI</p>
             <p className="text-xs text-gray-400 dark:text-gray-600">Creates tasks from each imported note; duplicates are skipped</p>
-            {local.watchFolderAutoExtract && !bedrockReady && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Needs an AWS Bedrock profile, region, and model below</p>
+            {local.watchFolderAutoExtract && !aiReady && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                {local.aiProvider === "openrouter"
+                  ? "Needs an OpenRouter API key and model below"
+                  : "Needs an AWS Bedrock profile, region, and model below"}
+              </p>
             )}
           </div>
           <button

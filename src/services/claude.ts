@@ -1,10 +1,26 @@
-import { CalendarEvent, Task, DailyBriefing, HeadsUpItem, ExtractedNoteData, TaskPriority, BedrockConfig } from "../types";
+import { CalendarEvent, Task, DailyBriefing, HeadsUpItem, ExtractedNoteData, TaskPriority, AppSettings, BedrockConfig } from "../types";
 import type { GitLabIssue } from "./gitlab";
 import type { FreshserviceTicket } from "./freshservice";
 import { format, isBefore, parseISO } from "date-fns";
 import { callClaude } from "./bedrock";
 
-export function hasBedrockConfig(cfg: BedrockConfig): boolean {
+/** Build the AI provider config from app settings. */
+export function aiConfigFromSettings(settings: AppSettings): BedrockConfig {
+  return {
+    provider: settings.aiProvider,
+    profile: settings.bedrockProfile,
+    region: settings.bedrockRegion,
+    modelId: settings.bedrockModelId,
+    openRouterApiKey: settings.openRouterApiKey,
+    openRouterModel: settings.openRouterModel,
+  };
+}
+
+/** True when the selected provider has everything it needs to make a call. */
+export function hasAIConfig(cfg: BedrockConfig): boolean {
+  if (cfg.provider === "openrouter") {
+    return !!(cfg.openRouterApiKey && cfg.openRouterModel);
+  }
   return !!(cfg.profile && cfg.region && cfg.modelId);
 }
 
@@ -94,7 +110,7 @@ export async function generateDailyBriefing(
   try {
     narrative = await callClaude(cfg, [{ role: "user", content: buildNarrativePrompt(userName, today, timeStr, upcomingToday, tomorrowEvents, openTasks, gitlabIssues, freshserviceTickets) }]);
   } catch (e) {
-    narrative = `Unable to generate narrative — check your Bedrock settings (profile: ${cfg.profile}).`;
+    narrative = `Unable to generate narrative — check your AI settings (provider: ${cfg.provider === "openrouter" ? "OpenRouter" : "Bedrock"}).`;
   }
 
   return {

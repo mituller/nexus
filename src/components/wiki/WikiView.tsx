@@ -6,6 +6,7 @@ import { useNotesStore } from "../../stores/notes";
 import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
 import { ingestNoteToWiki, queryWiki, lintWiki, LintResult } from "../../services/wikiAI";
+import { aiConfigFromSettings, hasAIConfig } from "../../services/claude";
 import { markNoteWikiProcessed, getUnprocessedNotes } from "../../services/wiki";
 import { WikiPageList } from "./WikiPageList";
 import { WikiPageDetail } from "./WikiPageDetail";
@@ -31,8 +32,8 @@ export function WikiView() {
   const { tasks } = useTaskStore();
   const { settings } = useSettingsStore();
 
-  const cfg = { profile: settings.bedrockProfile, region: settings.bedrockRegion, modelId: settings.bedrockModelId };
-  const bedrockReady = !!(cfg.profile && cfg.region && cfg.modelId);
+  const cfg = aiConfigFromSettings(settings);
+  const aiReady = hasAIConfig(cfg);
 
   const [panel, setPanel] = useState<PanelMode>("none");
   const [graphView, setGraphView] = useState(false);
@@ -44,7 +45,7 @@ export function WikiView() {
   const [lintLoading, setLintLoading] = useState(false);
 
   async function handleIngest() {
-    if (!bedrockReady) return;
+    if (!aiReady) return;
     // Reload notes from DB first — ensures wiki_processed_at resets are reflected
     await useNotesStore.getState().load();
     const unprocessed = await getUnprocessedNotes();
@@ -100,7 +101,7 @@ export function WikiView() {
   }
 
   async function handleQuery() {
-    if (!queryText.trim() || !bedrockReady) return;
+    if (!queryText.trim() || !aiReady) return;
     setQueryLoading(true);
     setQueryAnswer(null);
     try {
@@ -161,7 +162,7 @@ export function WikiView() {
             <Network size={12} /> {graphView ? "Pages" : "Graph"}
           </button>
           <div className="flex-1" />
-          {bedrockReady && (
+          {aiReady && (
             <>
               <button
                 onClick={() => { setPanel(panel === "query" ? "none" : "query"); setQueryAnswer(null); }}

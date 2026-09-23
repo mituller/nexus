@@ -112,10 +112,20 @@ export interface ExtractedNoteData {
   entities: string[];
 }
 
+export type AIProvider = "bedrock" | "openrouter";
+
+/**
+ * AI provider configuration. `provider` selects which backend is used:
+ * - "bedrock"      → AWS Bedrock via the local AWS profile (profile/region/modelId)
+ * - "openrouter"   → OpenRouter's OpenAI-compatible API (apiKey/model)
+ */
 export interface BedrockConfig {
+  provider: AIProvider;
   profile: string;
   region: string;
   modelId: string;
+  openRouterApiKey: string;
+  openRouterModel: string;
 }
 
 export interface AppSettings {
@@ -129,10 +139,15 @@ export interface AppSettings {
   gitlabToken: string;
   gitlabProjectFilters: string;
   gitlabDefaultProjectId: string;
+  // AI provider
+  aiProvider: AIProvider;
   // AWS Bedrock
   bedrockProfile: string;
   bedrockRegion: string;
   bedrockModelId: string;
+  // OpenRouter
+  openRouterApiKey: string;
+  openRouterModel: string;
   // Freshservice
   freshserviceUrl: string;
   freshserviceApiKey: string;
@@ -154,9 +169,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitlabToken: "",
   gitlabProjectFilters: "",
   gitlabDefaultProjectId: "",
+  aiProvider: "bedrock",
   bedrockProfile: "freshservice-bedrock",
   bedrockRegion: "us-east-1",
   bedrockModelId: "us.anthropic.claude-sonnet-4-6",
+  openRouterApiKey: "",
+  openRouterModel: "~anthropic/claude-sonnet-latest",
   freshserviceUrl: "",
   freshserviceApiKey: "",
   watchFolderEnabled: false,

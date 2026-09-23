@@ -6,7 +6,7 @@ import { format, parseISO } from "date-fns";
 import { useNotesStore } from "../../stores/notes";
 import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
-import { extractFromNote, hasBedrockConfig } from "../../services/claude";
+import { extractFromNote, aiConfigFromSettings, hasAIConfig } from "../../services/claude";
 import { linkNoteTask, markNoteExtracted, resetNoteWikiProcessed } from "../../services/notes";
 import { findSimilarTask, hasExactTask } from "../../utils/taskMatching";
 import { unescapeBrackets } from "../../utils/markdown";
@@ -37,8 +37,8 @@ export function NoteEditor() {
   const { settings } = useSettingsStore();
 
   const note = notes.find((n) => n.id === activeNoteId) ?? null;
-  const cfg = { profile: settings.bedrockProfile, region: settings.bedrockRegion, modelId: settings.bedrockModelId };
-  const bedrockReady = hasBedrockConfig(cfg);
+  const cfg = aiConfigFromSettings(settings);
+  const aiReady = hasAIConfig(cfg);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -107,7 +107,7 @@ export function NoteEditor() {
   }
 
   async function handleExtract() {
-    if (!bedrockReady || !activeNoteId) return;
+    if (!aiReady || !activeNoteId) return;
     setExtracting(true);
     try {
       const result = await extractFromNote(cfg, title, content, note?.sourceType === "transcript");
@@ -261,7 +261,7 @@ export function NoteEditor() {
               <BadgeCheck size={13} /> Extracted
             </span>
           )}
-          {bedrockReady && (
+          {aiReady && (
             <button
               onClick={handleExtract}
               disabled={extracting || !content.trim()}
