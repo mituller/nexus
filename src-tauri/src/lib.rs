@@ -128,13 +128,24 @@ pub fn run() {
                 for item in menu.items()? {
                     if let MenuItemKind::Submenu(submenu) = item {
                         // The first submenu in the default menu is the app menu
-                        // (titled with the app name) — Settings goes right after About.
+                        // (titled with the app name). macOS derives the About
+                        // label from the running process name — lowercase
+                        // "nexus" in dev mode — so we replace it with an
+                        // explicit "About Nexus", then insert Settings after it.
                         if is_first {
-                            if submenu.items()?.first().is_some() {
-                                let _ = submenu.insert(&settings_item, 1);
-                            } else {
-                                let _ = submenu.append(&settings_item);
-                            }
+                            let about_meta = tauri::menu::AboutMetadata {
+                                name: Some(String::from("Nexus")),
+                                version: Some(app.package_info().version.to_string()),
+                                ..Default::default()
+                            };
+                            let about_item = PredefinedMenuItem::about(
+                                app,
+                                Some("About Nexus"),
+                                Some(about_meta),
+                            )?;
+                            let _ = submenu.remove_at(0); // default About item
+                            let _ = submenu.insert(&about_item, 0);
+                            let _ = submenu.insert(&settings_item, 1);
                             is_first = false;
                             continue;
                         }
