@@ -2,7 +2,7 @@
 
 A personal knowledge management desktop app that unifies your calendar, tasks, notes, tickets, and a self-building wiki into a single daily workspace — powered by AWS Bedrock (Claude).
 
-![Nexus](src-tauri/icons/icon.svg)
+<img src="src-tauri/icons/icon.svg" alt="Nexus" width="256" height="256" />
 
 ---
 
