@@ -104,9 +104,11 @@ pub fn run() {
                 }
             }
 
-            // Surface the app shortcuts (⌘K search, ⌘⇧N quick capture) in the
-            // native Edit menu so they're discoverable. The default menu already
-            // ships an Edit submenu — we append our items to it in place.
+            // Surface the app shortcuts in the native menus so they're
+            // discoverable. macOS conventions: creation commands live under
+            // File (Quick Capture creates a task/note), find/search under Edit
+            // (Search is the global find). Both default submenus already exist
+            // in the default menu — we append to them in place.
             if let Some(menu) = app.menu() {
                 let search_item =
                     MenuItem::with_id(app, "menu-search", "Search…", true, Some("CmdOrCtrl+K"))?;
@@ -119,11 +121,16 @@ pub fn run() {
                 )?;
                 for item in menu.items()? {
                     if let MenuItemKind::Submenu(submenu) = item {
-                        if submenu.text()? == "Edit" {
-                            submenu.append(&PredefinedMenuItem::separator(app)?)?;
-                            submenu.append(&search_item)?;
-                            submenu.append(&capture_item)?;
-                            break;
+                        match submenu.text().ok().as_deref() {
+                            Some("File") => {
+                                submenu.append(&PredefinedMenuItem::separator(app)?)?;
+                                submenu.append(&capture_item)?;
+                            }
+                            Some("Edit") => {
+                                submenu.append(&PredefinedMenuItem::separator(app)?)?;
+                                submenu.append(&search_item)?;
+                            }
+                            _ => {}
                         }
                     }
                 }
