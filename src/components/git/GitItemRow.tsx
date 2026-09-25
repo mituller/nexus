@@ -1,16 +1,16 @@
 import { memo } from "react";
 import { ExternalLink, GitBranch } from "lucide-react";
-import { GitLabIssue } from "../../services/gitlab";
-import { GITLAB_PRIORITY_COLORS } from "../../utils/priority";
+import { GitIssue } from "../../types/git";
+import { GIT_PRIORITY_COLORS } from "../../utils/priority";
 import { isOverdue, formatShortDate } from "../../utils/calendar";
 import { openExternalUrl } from "../../utils/calendar";
 
-interface GitLabItemRowProps {
-  issue: GitLabIssue;
+interface GitItemRowProps {
+  issue: GitIssue;
   compact?: boolean; // smaller padding for dense lists (Week Ahead)
 }
 
-export const GitLabItemRow = memo(function GitLabItemRow({ issue, compact = false }: GitLabItemRowProps) {
+export const GitItemRow = memo(function GitItemRow({ issue, compact = false }: GitItemRowProps) {
   const overdue = issue.dueDate && isOverdue(issue.dueDate);
   const pad = compact ? "px-3 py-2" : "px-4 py-3";
 
@@ -31,7 +31,7 @@ export const GitLabItemRow = memo(function GitLabItemRow({ issue, compact = fals
             {issue.issueType}
           </span>
           {issue.priority && (
-            <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${GITLAB_PRIORITY_COLORS[issue.priority]}`}>
+            <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${GIT_PRIORITY_COLORS[issue.priority]}`}>
               {issue.priority}
             </span>
           )}

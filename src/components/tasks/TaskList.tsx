@@ -2,10 +2,10 @@ import { useState, useMemo, memo, useRef, useEffect } from "react";
 import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon, FileText, Search } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
-import { useGitLabStore } from "../../stores/gitlab";
+import { useGitStore, GIT_PROVIDER_LABEL } from "../../stores/git";
 import { useSettingsStore } from "../../stores/settings";
 import { Task } from "../../types";
-import { GitLabIssue, GitLabMR } from "../../services/gitlab";
+import { GitIssue, GitMR } from "../../types/git";
 import { createGitLabIssue } from "../../services/gitlabWrite";
 import { TaskForm } from "./TaskForm";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
@@ -18,7 +18,7 @@ const PRIORITY_BADGE: Record<Task["priority"], string> = {
   low:    "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
 };
 
-const GITLAB_PRIORITY_COLOR: Record<NonNullable<GitLabIssue["priority"]>, string> = {
+const GIT_PRIORITY_COLOR: Record<NonNullable<GitIssue["priority"]>, string> = {
   critical: "text-red-600",
   high: "text-orange-500",
   medium: "text-yellow-600",
@@ -35,7 +35,8 @@ interface TaskListProps {
 
 export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListProps = {}) {
   const { tasks, complete, remove, update } = useTaskStore();
-  const { issues, mrs, connected: gitlabConnected, openIssue } = useGitLabStore();
+  const { issues, mrs, connected: gitConnected, openIssue, provider } = useGitStore();
+  const gitLabel = GIT_PROVIDER_LABEL[provider];
   const [showForm, setShowForm] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [filterPriority, setFilterPriority] = useState<Task["priority"] | "all">("all");
@@ -108,8 +109,8 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
                 {" · "}{tasks.filter(t => t.status === "done").length} completed {showCompleted ? "↑ hide" : "↓ show"}
               </button>
             )}
-            {gitlabConnected && issues.length > 0 && (
-              <span className="ml-1">· {issues.length} GitLab</span>
+            {gitConnected && issues.length > 0 && (
+              <span className="ml-1">· {issues.length} {gitLabel}</span>
             )}
           </p>
         </div>
@@ -167,7 +168,7 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
       {showForm && <TaskForm onClose={() => setShowForm(false)} />}
 
       {/* Personal tasks */}
-      {visible.length === 0 && !gitlabConnected ? (
+      {visible.length === 0 && !gitConnected ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <CheckCircle2 size={40} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">No tasks — you're all caught up.</p>
@@ -180,27 +181,27 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
         </div>
       )}
 
-      {/* GitLab issues */}
-      {gitlabConnected && issues.length > 0 && (
+      {/* Git issues */}
+      {gitConnected && issues.length > 0 && (
         <div className="mt-8">
           <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
             <GitBranch size={13} />
-            GitLab — Open Items ({issues.length})
+            {gitLabel} — Open Items ({issues.length})
           </h2>
           <div className="space-y-1">
             {issues.map((issue) => (
-              <GitLabRow key={issue.id} issue={issue} onOpen={openIssue} />
+              <GitIssueRow key={issue.id} issue={issue} onOpen={openIssue} />
             ))}
           </div>
         </div>
       )}
 
-      {/* GitLab MRs */}
-      {gitlabConnected && mrs.length > 0 && (
+      {/* Git MRs/PRs */}
+      {gitConnected && mrs.length > 0 && (
         <div className="mt-8">
           <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
             <GitBranch size={13} />
-            GitLab — My Merge Requests ({mrs.length})
+            {gitLabel} — My {provider === "github" ? "Pull Requests" : "Merge Requests"} ({mrs.length})
           </h2>
           <div className="space-y-1">
             {mrs.map((mr) => (
@@ -237,7 +238,7 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
   }
 
   async function handleCreateIssue() {
-    if (!settings.gitlabToken || !settings.gitlabDefaultProjectId) return;
+    if (settings.gitProvider !== "gitlab" || !settings.gitlabToken || !settings.gitlabDefaultProjectId) return;
     setCreating(true);
     try {
       const issue = await createGitLabIssue(
@@ -305,7 +306,7 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
         >
           <Pencil size={13} />
         </button>
-        {settings.gitlabDefaultProjectId && settings.gitlabToken && !createdUrl && (
+        {settings.gitProvider === "gitlab" && settings.gitlabDefaultProjectId && settings.gitlabToken && !createdUrl && (
           <button
             onClick={handleCreateIssue}
             disabled={creating}
@@ -328,14 +329,14 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
   );
 });
 
-// ─── GitLab issue row ─────────────────────────────────────────────────────────
+// ─── Git issue row ───────────────────────────────────────────────────────────
 
-interface GitLabRowProps {
-  issue: GitLabIssue;
+interface GitIssueRowProps {
+  issue: GitIssue;
   onOpen: (url: string) => void;
 }
 
-const GitLabRow = memo(function GitLabRow({ issue, onOpen }: GitLabRowProps) {
+const GitIssueRow = memo(function GitIssueRow({ issue, onOpen }: GitIssueRowProps) {
   const isOverdue = issue.dueDate && isBefore(parseISO(issue.dueDate), new Date());
 
   return (
@@ -352,7 +353,7 @@ const GitLabRow = memo(function GitLabRow({ issue, onOpen }: GitLabRowProps) {
           <span className="text-xs text-gray-400 dark:text-gray-500">{issue.projectName} #{issue.iid}</span>
             <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs capitalize">{issue.issueType}</span>
           {issue.priority && (
-            <span className={`text-xs font-medium ${GITLAB_PRIORITY_COLOR[issue.priority]}`}>
+            <span className={`text-xs font-medium ${GIT_PRIORITY_COLOR[issue.priority]}`}>
               ● {issue.priority}
             </span>
           )}
@@ -384,7 +385,7 @@ const GitLabRow = memo(function GitLabRow({ issue, onOpen }: GitLabRowProps) {
 
 // ─── MR row ───────────────────────────────────────────────────────────────────
 
-const MRRow = memo(function MRRow({ mr, onOpen }: { mr: GitLabMR; onOpen: (url: string) => void }) {
+const MRRow = memo(function MRRow({ mr, onOpen }: { mr: GitMR; onOpen: (url: string) => void }) {
   return (
     <button
       onClick={() => onOpen(mr.webUrl)}
@@ -399,7 +400,7 @@ const MRRow = memo(function MRRow({ mr, onOpen }: { mr: GitLabMR; onOpen: (url: 
         </div>
         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
           <span className="text-xs text-gray-400 dark:text-gray-500">{mr.projectName} !{mr.iid}</span>
-          <span className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate max-w-32">{mr.sourceBranch}</span>
+          {mr.sourceBranch && <span className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate max-w-32">{mr.sourceBranch}</span>}
           {mr.milestone && <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-500 rounded text-xs">{mr.milestone}</span>}
         </div>
       </div>

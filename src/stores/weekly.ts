@@ -6,7 +6,7 @@ import { aiConfigFromSettings, hasAIConfig } from "../services/claude";
 import { useSettingsStore } from "./settings";
 import { useCalendarStore } from "./calendar";
 import { useTaskStore } from "./tasks";
-import { useGitLabStore } from "./gitlab";
+import { useGitStore } from "./git";
 import { useFreshserviceStore } from "./freshservice";
 import { format as dateFmt, addDays, parseISO, isBefore } from "date-fns";
 
@@ -60,7 +60,7 @@ export const useWeeklyStore = create<WeeklyStore>((set, get) => ({
       // Gather data from all stores
       const { fetchEventsForRange } = useCalendarStore.getState();
       const { tasks } = useTaskStore.getState();
-      const { issues } = useGitLabStore.getState();
+      const { issues } = useGitStore.getState();
       const { tickets } = useFreshserviceStore.getState();
 
       const weekEvents = await fetchEventsForRange(weekStart, weekEnd);

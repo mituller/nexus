@@ -5,7 +5,7 @@ import { generateDailyBriefing, aiConfigFromSettings, hasAIConfig } from "../ser
 import { getCachedBriefing, saveCachedBriefing } from "../services/store";
 import { useSettingsStore } from "./settings";
 import { useTaskStore } from "./tasks";
-import { useGitLabStore } from "./gitlab";
+import { useGitStore } from "./git";
 import { useFreshserviceStore } from "./freshservice";
 import { isToday, startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, format } from "date-fns";
 
@@ -190,7 +190,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
 
     const { todayEvents, tomorrowEvents } = get();
     const { tasks } = useTaskStore.getState();
-    const { issues } = useGitLabStore.getState();
+    const { issues } = useGitStore.getState();
     const { tickets } = useFreshserviceStore.getState();
 
     set({ loadingBriefing: true });

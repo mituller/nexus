@@ -117,29 +117,57 @@ export function Settings() {
         </button>
       </Section>
 
-      {/* GitLab */}
-      <Section title="GitLab">
+      {/* Git repo */}
+      <Section title="Git Repo">
         <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
-          Shows issues assigned to you on the Dashboard. Requires a Personal Access Token with{" "}
-          <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">read_api</code> scope.
+          Shows issues and pull requests assigned to you on the Dashboard.
         </p>
-        <Field label="GitLab URL" type="text" placeholder="https://gitlab.com" {...field("gitlabUrl")} />
-        <Field label="Personal Access Token" type="password" placeholder="glpat-…" {...field("gitlabToken")} />
-        <Field
-          label="Project filters (comma-separated IDs, blank = all)"
-          type="text"
-          placeholder="123, 456"
-          {...field("gitlabProjectFilters")}
-        />
-        <Field
-          label="Default project ID for creating issues"
-          type="text"
-          placeholder="123"
-          {...field("gitlabDefaultProjectId")}
-        />
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          To create issues from tasks, your token needs <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">api</code> scope (not just <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">read_api</code>).
-        </p>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1">Provider</label>
+          <select
+            value={local.gitProvider}
+            onChange={(e) => setLocal((p) => ({ ...p, gitProvider: e.target.value as "gitlab" | "github" }))}
+            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+          >
+            <option value="gitlab">GitLab</option>
+            <option value="github">GitHub</option>
+          </select>
+        </div>
+
+        {local.gitProvider === "github" ? (
+          <>
+            <Field label="Personal Access Token" type="password" placeholder="ghp_… / ghp_gh…" {...field("githubToken")} />
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Classic token with <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">repo</code> scope, or a fine-grained token with
+              read access to <strong>Issues</strong> and <strong>Pull requests</strong>. Shown: open issues assigned to you and open PRs you authored.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
+              Requires a Personal Access Token with{" "}
+              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">read_api</code> scope.
+            </p>
+            <Field label="GitLab URL" type="text" placeholder="https://gitlab.com" {...field("gitlabUrl")} />
+            <Field label="Personal Access Token" type="password" placeholder="glpat-…" {...field("gitlabToken")} />
+            <Field
+              label="Project filters (comma-separated IDs, blank = all)"
+              type="text"
+              placeholder="123, 456"
+              {...field("gitlabProjectFilters")}
+            />
+            <Field
+              label="Default project ID for creating issues"
+              type="text"
+              placeholder="123"
+              {...field("gitlabDefaultProjectId")}
+            />
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              To create issues from tasks, your token needs <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">api</code> scope (not just <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">read_api</code>).
+            </p>
+          </>
+        )}
       </Section>
 
       {/* Freshservice */}
@@ -156,7 +184,7 @@ export function Settings() {
       <WatchedFolderSection local={local} setLocal={setLocal} />
 
       {/* Claude AI */}
-      <Section title="Claude AI">
+      <Section title="AI">
         <div>
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1">Provider</label>
           <select

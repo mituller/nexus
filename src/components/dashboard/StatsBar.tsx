@@ -3,7 +3,7 @@ import { DailyBriefing } from "../../types";
 
 interface StatsBarProps {
   stats: DailyBriefing["stats"];
-  overdueExternal?: number; // overdue GitLab items + Freshservice tickets
+  overdueExternal?: number; // overdue git items + Freshservice tickets
 }
 
 export const StatsBar = memo(function StatsBar({ stats, overdueExternal = 0 }: StatsBarProps) {

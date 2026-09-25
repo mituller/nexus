@@ -3,7 +3,7 @@ import { Layout } from "./components/layout/Layout";
 import { useSettingsStore } from "./stores/settings";
 import { useTaskStore } from "./stores/tasks";
 import { useCalendarStore } from "./stores/calendar";
-import { useGitLabStore } from "./stores/gitlab";
+import { useGitStore } from "./stores/git";
 import { useFreshserviceStore } from "./stores/freshservice";
 import { useWeeklyStore } from "./stores/weekly";
 import { useFolderWatcherStore } from "./stores/folderWatcher";
@@ -15,7 +15,7 @@ export default function App() {
   const { load: loadSettings, settings, loaded } = useSettingsStore();
   const { load: loadTasks, tasks } = useTaskStore();
   const { fetchEvents, generateBriefing, prefetchCurrentWeek, todayEvents } = useCalendarStore();
-  const { fetch: fetchGitLab } = useGitLabStore();
+  const { fetch: fetchGit } = useGitStore();
   const { fetch: fetchTickets } = useFreshserviceStore();
   const { load: loadWeeklyNarrative, generate: generateWeeklyNarrative } = useWeeklyStore();
   const { startPolling, stopPolling } = useFolderWatcherStore();
@@ -45,8 +45,8 @@ export default function App() {
       prefetchCurrentWeek();
     }
 
-    if (settings.gitlabToken && settings.gitlabUrl) {
-      fetchGitLab();
+    if (settings.gitProvider === "github" ? settings.githubToken : settings.gitlabToken) {
+      fetchGit();
     }
 
     if (settings.freshserviceUrl && settings.freshserviceApiKey) {
@@ -67,7 +67,7 @@ export default function App() {
 
     // Notify on startup if there are overdue tasks
     notifyOverdueTasks(tasks).catch(() => {});
-  }, [loaded, settings, fetchEvents, generateBriefing, fetchGitLab, fetchTickets, loadWeeklyNarrative, generateWeeklyNarrative]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loaded, settings, fetchEvents, generateBriefing, fetchGit, fetchTickets, loadWeeklyNarrative, generateWeeklyNarrative]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-schedule meeting notifications whenever today's events change
   useEffect(() => {

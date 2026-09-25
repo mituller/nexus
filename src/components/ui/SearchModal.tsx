@@ -3,11 +3,11 @@ import { Search, FileText, CheckSquare, BookOpen, X, GitBranch, Ticket } from "l
 import { useNotesStore } from "../../stores/notes";
 import { useTaskStore } from "../../stores/tasks";
 import { useWikiStore } from "../../stores/wiki";
-import { useGitLabStore } from "../../stores/gitlab";
+import { useGitStore } from "../../stores/git";
 import { useFreshserviceStore } from "../../stores/freshservice";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 
-type ResultType = "note" | "task" | "wiki" | "gitlab" | "ticket";
+type ResultType = "note" | "task" | "wiki" | "git" | "ticket";
 
 interface SearchResult {
   id: string;
@@ -26,7 +26,7 @@ const TYPE_ICON: Record<ResultType, React.ReactNode> = {
   note: <FileText size={14} />,
   task: <CheckSquare size={14} />,
   wiki: <BookOpen size={14} />,
-  gitlab: <GitBranch size={14} />,
+  git: <GitBranch size={14} />,
   ticket: <Ticket size={14} />,
 };
 
@@ -34,7 +34,7 @@ const TYPE_LABEL: Record<ResultType, string> = {
   note: "Note",
   task: "Task",
   wiki: "Wiki",
-  gitlab: "GitLab",
+  git: "Git",
   ticket: "Ticket",
 };
 
@@ -42,7 +42,7 @@ const TYPE_COLOR: Record<ResultType, string> = {
   note: "text-blue-500",
   task: "text-green-500",
   wiki: "text-purple-500",
-  gitlab: "text-orange-500",
+  git: "text-orange-500",
   ticket: "text-teal-500",
 };
 
@@ -50,7 +50,7 @@ const TYPE_BADGE: Record<ResultType, string> = {
   note: "bg-blue-50 text-purple-600",
   task: "bg-green-50 text-green-600",
   wiki: "bg-purple-50 text-purple-600",
-  gitlab: "bg-orange-50 text-orange-600",
+  git: "bg-orange-50 text-orange-600",
   ticket: "bg-teal-50 text-teal-600",
 };
 
@@ -72,7 +72,7 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
   const { notes } = useNotesStore();
   const { tasks } = useTaskStore();
   const { pages } = useWikiStore();
-  const { issues } = useGitLabStore();
+  const { issues } = useGitStore();
   const { tickets } = useFreshserviceStore();
 
   const search = useCallback((q: string) => {
@@ -97,7 +97,7 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
     }
     for (const i of issues) {
       if (i.title.toLowerCase().includes(lower) || i.projectName.toLowerCase().includes(lower)) {
-        found.push({ id: String(i.id), type: "gitlab", title: `${i.projectName} #${i.iid}: ${i.title}`, excerpt: `${i.issueType} · ${i.priority ?? "medium"}`, url: i.webUrl });
+        found.push({ id: String(i.id), type: "git", title: `${i.projectName} #${i.iid}: ${i.title}`, excerpt: `${i.issueType} · ${i.priority ?? "medium"}`, url: i.webUrl });
       }
     }
     for (const t of tickets) {
@@ -125,7 +125,7 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
   }
 
   function handleSelect(r: SearchResult) {
-    if ((r.type === "gitlab" || r.type === "ticket") && r.url) {
+    if ((r.type === "git" || r.type === "ticket") && r.url) {
       openUrl(r.url);
       onClose();
     } else {
@@ -150,14 +150,14 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <Search size={16} className="text-gray-400 dark:text-gray-500 shrink-0" />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search notes, tasks, wiki, GitLab, tickets…"
+            placeholder="Search notes, tasks, wiki, git, tickets…"
             className="flex-1 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border-none outline-none bg-transparent" />
           {query && <button onClick={() => setQuery("")} className="text-gray-300 dark:text-gray-600 hover:text-gray-500"><X size={14} /></button>}
           <kbd className="hidden sm:inline-flex text-xs text-gray-400 dark:text-gray-600 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">esc</kbd>
         </div>
 
         <div className="max-h-80 overflow-y-auto">
-          {!query && <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-8">Search notes, tasks, wiki, GitLab items, and tickets.</p>}
+          {!query && <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-8">Search notes, tasks, wiki, git items, and tickets.</p>}
           {query && results.length === 0 && <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-8">No results for "{query}"</p>}
           {results.map((r, i) => (
             <button key={`${r.type}-${r.id}`} onClick={() => handleSelect(r)} onMouseEnter={() => setActive(i)}

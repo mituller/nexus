@@ -5,14 +5,14 @@ import { format, addDays, isBefore, parseISO } from "date-fns";
 import { useCalendarStore } from "../../stores/calendar";
 import { useSettingsStore } from "../../stores/settings";
 import { useTaskStore } from "../../stores/tasks";
-import { useGitLabStore } from "../../stores/gitlab";
+import { useGitStore } from "../../stores/git";
 import { useFreshserviceStore } from "../../stores/freshservice";
 import { StatsBar } from "./StatsBar";
 import { HeadsUpSection } from "./HeadsUpSection";
 import { MeetingCard } from "./MeetingCard";
 import { DashboardTaskItem } from "./DashboardTaskItem";
 import { sortTasks } from "../ui/TaskItem";
-import { GitLabSection } from "./GitLabSection";
+import { GitSection } from "./GitSection";
 import { FreshserviceSection } from "./FreshserviceSection";
 
 import { CalendarEvent } from "../../types";
@@ -31,7 +31,7 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
     fetchEvents: s.fetchEvents, generateBriefing: s.generateBriefing, feedStatus: s.feedStatus,
   })));
   const failedFeeds = useMemo(() => feedStatus.filter((f) => !f.ok), [feedStatus]);
-  const { fetch: fetchGitLab, issues } = useGitLabStore();
+  const { fetch: fetchGit, issues } = useGitStore();
   const { fetch: fetchTickets, tickets } = useFreshserviceStore();
 
   // Date used for section headings. Stable for the session so the minute-by-minute
@@ -46,7 +46,7 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
     const stale = !lastFetched || (Date.now() - lastFetched.getTime()) > 10 * 60_000;
     if (hasFeeds && stale && !loadingEvents) {
       fetchEvents().then(() => generateBriefing());
-      fetchGitLab();
+      fetchGit();
       fetchTickets();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +71,7 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
 
   // #5 — Refresh all sources at once
   async function handleRefresh() {
-    await Promise.all([fetchEvents(), fetchGitLab(), fetchTickets()]);
+    await Promise.all([fetchEvents(), fetchGit(), fetchTickets()]);
     await generateBriefing(true);
   }
 
@@ -190,7 +190,7 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
             </section>
           )}
 
-          <GitLabSection />
+          <GitSection />
           <FreshserviceSection />
         </div>
       </div>

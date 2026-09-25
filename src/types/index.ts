@@ -1,3 +1,5 @@
+import { GitProvider } from "./git";
+
 export type TaskStatus = "open" | "in_progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
 
@@ -134,11 +136,13 @@ export interface AppSettings {
   timezone: string;
   darkMode: boolean;
   icalFeeds: ICalFeed[];
-  // GitLab
+  // Git repo (GitLab or GitHub)
+  gitProvider: GitProvider;
   gitlabUrl: string;
   gitlabToken: string;
   gitlabProjectFilters: string;
   gitlabDefaultProjectId: string;
+  githubToken: string;
   // AI provider
   aiProvider: AIProvider;
   // AWS Bedrock
@@ -165,10 +169,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   darkMode: false,
   icalFeeds: [],
+  gitProvider: "gitlab",
   gitlabUrl: "https://gitlab.com",
   gitlabToken: "",
   gitlabProjectFilters: "",
   gitlabDefaultProjectId: "",
+  githubToken: "",
   aiProvider: "bedrock",
   bedrockProfile: "freshservice-bedrock",
   bedrockRegion: "us-east-1",

@@ -1,48 +1,8 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { GitIssue, GitMR, GitUser } from "../types/git";
+import { extractPriorityFromLabels } from "../utils/priority";
 
-export interface GitLabIssue {
-  id: number;
-  iid: number;
-  title: string;
-  state: "opened" | "closed";
-  webUrl: string;
-  projectId: number;
-  projectName: string;
-  projectPath: string;
-  labels: string[];
-  milestone?: string;
-  iteration?: string;
-  dueDate?: string;
-  priority?: "critical" | "high" | "medium" | "low";
-  issueType: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GitLabMR {
-  id: number;
-  iid: number;
-  title: string;
-  state: "opened" | "closed" | "merged";
-  webUrl: string;
-  projectName: string;
-  projectPath: string;
-  sourceBranch: string;
-  targetBranch: string;
-  isDraft: boolean;
-  hasConflicts: boolean;
-  labels: string[];
-  milestone?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GitLabUser {
-  id: number;
-  username: string;
-  name: string;
-  avatarUrl: string;
-}
+export type { GitIssue, GitMR, GitUser };
 
 // Parse the user-supplied URL into a base API origin and an optional group path.
 // e.g. "https://gitlab.com/WSB_Dev" → { origin: "https://gitlab.com", group: "WSB_Dev" }
@@ -69,11 +29,10 @@ async function glGet<T>(origin: string, token: string, path: string): Promise<T>
   return res.json() as Promise<T>;
 }
 
-export async function getGitLabUser(baseUrl: string, token: string): Promise<GitLabUser> {
+export async function getGitLabUser(baseUrl: string, token: string): Promise<GitUser> {
   const { origin } = parseGitLabUrl(baseUrl);
   const raw = await glGet<Record<string, unknown>>(origin, token, "/user");
   return {
-    id: raw.id as number,
     username: raw.username as string,
     name: raw.name as string,
     avatarUrl: raw.avatar_url as string,
@@ -85,7 +44,7 @@ export async function getAssignedIssues(
   token: string,
   projectFilters?: string,
   userId?: number
-): Promise<GitLabIssue[]> {
+): Promise<GitIssue[]> {
   const { origin, group } = parseGitLabUrl(baseUrl);
   // Use assignee_id when we have the user ID — more reliable than assigned_to_me on group endpoints
   const assigneeFilter = userId ? `assignee_id=${userId}` : "assigned_to_me=true&scope=assigned_to_me";
@@ -119,22 +78,23 @@ export async function getAssignedIssues(
     const projectName = projectPath.split("/").pop() ?? String(issue.project_id);
 
     return {
-      id: issue.id as number,
+      id: String(issue.id),
       iid: issue.iid as number,
       title: issue.title as string,
       state: issue.state as "opened" | "closed",
       webUrl: issue.web_url as string,
-      projectId: issue.project_id as number,
+      projectId: String(issue.project_id ?? ""),
       projectName,
       projectPath,
       labels,
       milestone: (issue.milestone as { title: string } | null)?.title,
       iteration: formatIteration(issue.iteration as IterationRaw | null),
       dueDate: (issue.due_date as string) ?? undefined,
-      priority: extractPriority(labels),
+      priority: extractPriorityFromLabels(labels),
       issueType: ((issue.issue_type ?? issue.type ?? "issue") as string).replace(/_/g, " "),
       createdAt: issue.created_at as string,
       updatedAt: issue.updated_at as string,
+      provider: "gitlab",
     };
   });
 }
@@ -160,20 +120,11 @@ function formatIteration(iter: IterationRaw | null): string | undefined {
   return `Iteration ${iter.iid ?? ""}`;
 }
 
-function extractPriority(labels: string[]): GitLabIssue["priority"] {
-  const lower = labels.map((l) => l.toLowerCase());
-  if (lower.some((l) => l.includes("critical"))) return "critical";
-  if (lower.some((l) => l.includes("high"))) return "high";
-  if (lower.some((l) => l.includes("medium"))) return "medium";
-  if (lower.some((l) => l.includes("low"))) return "low";
-  return undefined;
-}
-
 export async function getOpenMergeRequests(
   baseUrl: string,
   token: string,
   projectFilters?: string
-): Promise<GitLabMR[]> {
+): Promise<GitMR[]> {
   const { origin, group } = parseGitLabUrl(baseUrl);
   const base = "?scope=created_by_me&state=opened&per_page=20&order_by=updated_at";
 
@@ -198,10 +149,10 @@ export async function getOpenMergeRequests(
     const projectName = projectPath.split("/").pop() ?? String(mr.project_id);
 
     return {
-      id: mr.id as number,
+      id: String(mr.id),
       iid: mr.iid as number,
       title: mr.title as string,
-      state: mr.state as GitLabMR["state"],
+      state: mr.state as GitMR["state"],
       webUrl: mr.web_url as string,
       projectName,
       projectPath,
@@ -213,6 +164,7 @@ export async function getOpenMergeRequests(
       milestone: (mr.milestone as { title: string } | null)?.title,
       createdAt: mr.created_at as string,
       updatedAt: mr.updated_at as string,
+      provider: "gitlab",
     };
   });
 }

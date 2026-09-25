@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { RefreshCw, Calendar, CheckSquare, Sparkles, GitBranch, Ticket } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, parseISO, isBefore } from "date-fns";
-import { GitLabItemRow } from "../gitlab/GitLabItemRow";
+import { GitItemRow } from "../git/GitItemRow";
 import { FreshserviceTicketRow } from "../tickets/FreshserviceTicketRow";
 import { useCalendarStore } from "../../stores/calendar";
 import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
-import { useGitLabStore } from "../../stores/gitlab";
+import { useGitStore } from "../../stores/git";
 import { useFreshserviceStore } from "../../stores/freshservice";
 import { useWeeklyStore } from "../../stores/weekly";
 import { aiConfigFromSettings, hasAIConfig } from "../../services/claude";
@@ -18,7 +18,7 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
   const { settings } = useSettingsStore();
   const { fetchEventsForRange } = useCalendarStore();
   const { tasks, complete } = useTaskStore();
-  const { issues } = useGitLabStore();
+  const { issues } = useGitStore();
   const { tickets } = useFreshserviceStore();
   const { narrative, loading: loadingNarrative, generatedAt, generate: generateNarrative } = useWeeklyStore();
 
@@ -177,11 +177,11 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
           {thisWeekIssues.length > 0 && (
             <section>
               <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
-                <GitBranch size={13} /> GitLab Items ({thisWeekIssues.length})
+                <GitBranch size={13} /> Git Items ({thisWeekIssues.length})
               </h2>
               <div className="space-y-1">
                 {thisWeekIssues.map((issue) => (
-                  <GitLabItemRow key={issue.id} issue={issue} compact />
+                  <GitItemRow key={issue.id} issue={issue} compact />
                 ))}
               </div>
             </section>
