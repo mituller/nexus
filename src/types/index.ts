@@ -152,9 +152,6 @@ export interface AppSettings {
   // OpenRouter
   openRouterApiKey: string;
   openRouterModel: string;
-  // Freshservice
-  freshserviceUrl: string;
-  freshserviceApiKey: string;
   // Watched folder
   watchFolderEnabled: boolean;
   watchFolderPath: string;
@@ -181,8 +178,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   bedrockModelId: "us.anthropic.claude-sonnet-4-6",
   openRouterApiKey: "",
   openRouterModel: "~anthropic/claude-sonnet-latest",
-  freshserviceUrl: "",
-  freshserviceApiKey: "",
+  // Watched folder
   watchFolderEnabled: false,
   watchFolderPath: "",
   watchFolderAutoExtract: false,

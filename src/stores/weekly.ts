@@ -7,7 +7,6 @@ import { useSettingsStore } from "./settings";
 import { useCalendarStore } from "./calendar";
 import { useTaskStore } from "./tasks";
 import { useGitStore } from "./git";
-import { useFreshserviceStore } from "./freshservice";
 import { format as dateFmt, addDays, parseISO, isBefore } from "date-fns";
 
 // Key = the first day shown in Week Ahead (tomorrow), so narrative matches the view exactly
@@ -61,7 +60,6 @@ export const useWeeklyStore = create<WeeklyStore>((set, get) => ({
       const { fetchEventsForRange } = useCalendarStore.getState();
       const { tasks } = useTaskStore.getState();
       const { issues } = useGitStore.getState();
-      const { tickets } = useFreshserviceStore.getState();
 
       const weekEvents = await fetchEventsForRange(weekStart, weekEnd);
       const openTasks = tasks.filter((t) => t.status !== "done");
@@ -75,12 +73,6 @@ export const useWeeklyStore = create<WeeklyStore>((set, get) => ({
       const dueIssues = issues.filter((i) => {
         if (!i.dueDate) return false;
         const d = parseISO(i.dueDate);
-        return (isBefore(d, now) || (d >= weekStart && d <= weekEnd));
-      });
-
-      const dueTickets = tickets.filter((t) => {
-        if (!t.dueBy) return false;
-        const d = parseISO(t.dueBy);
         return (isBefore(d, now) || (d >= weekStart && d <= weekEnd));
       });
 
@@ -102,10 +94,6 @@ export const useWeeklyStore = create<WeeklyStore>((set, get) => ({
         .map((i) => `- ${i.title} [${i.projectName}${i.dueDate ? `, due ${i.dueDate}` : ""}]`)
         .join("\n");
 
-      const ticketSummary = dueTickets.slice(0, 5)
-        .map((t) => `- #${t.id} ${t.subject} [${t.statusLabel}${t.dueBy ? `, due ${t.dueBy}` : ""}]`)
-        .join("\n");
-
       const prompt = `You are a weekly planning assistant. Write a concise week-ahead briefing for ${settings.userName || "the user"}. Week of ${dateFmt(weekStart, "MMMM d, yyyy")}.
 
 CALENDAR:
@@ -114,11 +102,8 @@ ${calendarSummary}
 TASKS DUE OR OVERDUE THIS WEEK:
 ${taskSummary || "None"}
 
-GITLAB ITEMS DUE:
+GIT ITEMS DUE:
 ${issueSummary || "None"}
-
-FRESHSERVICE TICKETS DUE:
-${ticketSummary || "None"}
 
 Write 3-4 focused paragraphs: busiest/lightest days, key priorities to tackle, anything needing prep. Do NOT start with a greeting. Flowing prose only — no markdown headers, no bullet points, no bold text.`;
 

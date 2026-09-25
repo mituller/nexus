@@ -170,16 +170,6 @@ export function Settings() {
         )}
       </Section>
 
-      {/* Freshservice */}
-      <Section title="Freshservice">
-        <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1 mb-3">
-          Shows tickets assigned to you. Use your Freshservice subdomain URL and an API key from{" "}
-          <strong>Profile → API Settings</strong>.
-        </p>
-        <Field label="Freshservice URL" type="text" placeholder="https://yourcompany.freshservice.com" {...field("freshserviceUrl")} />
-        <Field label="API Key" type="password" placeholder="your-api-key" {...field("freshserviceApiKey")} />
-      </Section>
-
       {/* Watched Folder */}
       <WatchedFolderSection local={local} setLocal={setLocal} />
 

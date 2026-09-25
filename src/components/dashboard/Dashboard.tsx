@@ -6,14 +6,12 @@ import { useCalendarStore } from "../../stores/calendar";
 import { useSettingsStore } from "../../stores/settings";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitStore } from "../../stores/git";
-import { useFreshserviceStore } from "../../stores/freshservice";
 import { StatsBar } from "./StatsBar";
 import { HeadsUpSection } from "./HeadsUpSection";
 import { MeetingCard } from "./MeetingCard";
 import { DashboardTaskItem } from "./DashboardTaskItem";
 import { sortTasks } from "../ui/TaskItem";
 import { GitSection } from "./GitSection";
-import { FreshserviceSection } from "./FreshserviceSection";
 
 import { CalendarEvent } from "../../types";
 
@@ -32,7 +30,6 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
   })));
   const failedFeeds = useMemo(() => feedStatus.filter((f) => !f.ok), [feedStatus]);
   const { fetch: fetchGit, issues } = useGitStore();
-  const { fetch: fetchTickets, tickets } = useFreshserviceStore();
 
   // Date used for section headings. Stable for the session so the minute-by-minute
   // clock (isolated in <HeaderClock/>) no longer re-renders this whole subtree.
@@ -47,19 +44,16 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
     if (hasFeeds && stale && !loadingEvents) {
       fetchEvents().then(() => generateBriefing());
       fetchGit();
-      fetchTickets();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const openTasks = useMemo(() => sortTasks(tasks.filter((t) => t.status !== "done")), [tasks]);
 
-  // #8 — count overdue GitLab items + Freshservice tickets for stats bar
+  // #8 — count overdue git items for stats bar
   const overdueExternal = useMemo(() => {
     const cutoff = new Date();
-    const overdueIssues = issues.filter((i) => i.dueDate && isBefore(parseISO(i.dueDate), cutoff)).length;
-    const overdueTickets = tickets.filter((t) => t.dueBy && isBefore(parseISO(t.dueBy), cutoff)).length;
-    return overdueIssues + overdueTickets;
-  }, [issues, tickets]);
+    return issues.filter((i) => i.dueDate && isBefore(parseISO(i.dueDate), cutoff)).length;
+  }, [issues]);
 
   // Drop alerts for tasks that have since been completed. Memoised so the array
   // identity is stable and HeadsUpSection can skip re-rendering.
@@ -71,7 +65,7 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
 
   // #5 — Refresh all sources at once
   async function handleRefresh() {
-    await Promise.all([fetchEvents(), fetchGit(), fetchTickets()]);
+    await Promise.all([fetchEvents(), fetchGit()]);
     await generateBriefing(true);
   }
 
@@ -176,7 +170,7 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
           )}
         </div>
 
-        {/* Right column — tasks + GitLab (2/5 width) */}
+        {/* Right column — tasks + git (2/5 width) */}
         <div className="col-span-2 space-y-5">
 
           {openTasks.length > 0 && (
@@ -191,7 +185,6 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
           )}
 
           <GitSection />
-          <FreshserviceSection />
         </div>
       </div>
     </div>

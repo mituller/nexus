@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { RefreshCw, Calendar, CheckSquare, Sparkles, GitBranch, Ticket } from "lucide-react";
+import { RefreshCw, Calendar, CheckSquare, Sparkles, GitBranch } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, parseISO, isBefore } from "date-fns";
 import { GitItemRow } from "../git/GitItemRow";
-import { FreshserviceTicketRow } from "../tickets/FreshserviceTicketRow";
 import { useCalendarStore } from "../../stores/calendar";
 import { useTaskStore } from "../../stores/tasks";
 import { useSettingsStore } from "../../stores/settings";
 import { useGitStore } from "../../stores/git";
-import { useFreshserviceStore } from "../../stores/freshservice";
 import { useWeeklyStore } from "../../stores/weekly";
 import { aiConfigFromSettings, hasAIConfig } from "../../services/claude";
 import { MeetingCard } from "../dashboard/MeetingCard";
@@ -19,7 +17,6 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
   const { fetchEventsForRange } = useCalendarStore();
   const { tasks, complete } = useTaskStore();
   const { issues } = useGitStore();
-  const { tickets } = useFreshserviceStore();
   const { narrative, loading: loadingNarrative, generatedAt, generate: generateNarrative } = useWeeklyStore();
 
   const [weekEvents, setWeekEvents] = useState<CalendarEvent[]>([]);
@@ -62,9 +59,6 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
 
   const thisWeekIssues = useMemo(
     () => issues.filter((i) => inWindow(i.dueDate)), [issues, inWindow]);
-
-  const thisWeekTickets = useMemo(
-    () => tickets.filter((t) => inWindow(t.dueBy)), [tickets, inWindow]);
 
   // Bucket events by local day once (O(n)) instead of scanning and re-parsing
   // the whole list for each of the seven days (O(days x n) with a format() call
@@ -157,7 +151,7 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
 
         {/* Right: due this week */}
         <div className="col-span-2 space-y-5">
-          {thisWeekTasks.length === 0 && thisWeekIssues.length === 0 && thisWeekTickets.length === 0 && (
+          {thisWeekTasks.length === 0 && thisWeekIssues.length === 0 && (
             <p className="text-sm text-gray-400 dark:text-gray-600 pt-6 text-center">Nothing due this week.</p>
           )}
 
@@ -182,19 +176,6 @@ export function WeeklyPlanView({ onAddMeetingNote }: { onAddMeetingNote?: (event
               <div className="space-y-1">
                 {thisWeekIssues.map((issue) => (
                   <GitItemRow key={issue.id} issue={issue} compact />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {thisWeekTickets.length > 0 && (
-            <section>
-              <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-500 mb-3">
-                <Ticket size={13} /> Freshservice Tickets ({thisWeekTickets.length})
-              </h2>
-              <div className="space-y-1">
-                {thisWeekTickets.map((ticket) => (
-                  <FreshserviceTicketRow key={ticket.id} ticket={ticket} compact />
                 ))}
               </div>
             </section>

@@ -1,5 +1,4 @@
 import type { GitIssue, GitPriority } from "../types/git";
-import type { TicketPriority } from "../services/freshservice";
 
 export const GIT_PRIORITY_COLORS: Record<NonNullable<GitIssue["priority"]>, string> = {
   critical: "text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400",
@@ -17,10 +16,3 @@ export function extractPriorityFromLabels(labels: string[]): GitPriority | undef
   if (lower.some((l) => l.includes("low"))) return "low";
   return undefined;
 }
-
-export const FRESHSERVICE_PRIORITY_COLORS: Record<TicketPriority, string> = {
-  urgent: "text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400",
-  high:   "text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400",
-  medium: "text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400",
-  low:    "text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400",
-};

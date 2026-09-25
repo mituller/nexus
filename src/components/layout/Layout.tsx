@@ -7,7 +7,6 @@ import { Settings } from "../settings/Settings";
 import { NotesView } from "../notes/NotesView";
 import { WikiView } from "../wiki/WikiView";
 import { WeeklyPlanView } from "../planning/WeeklyPlanView";
-import { TicketsView } from "../tickets/TicketsView";
 import { SearchModal } from "../ui/SearchModal";
 import { QuickCapture } from "../ui/QuickCapture";
 import { useNotesStore } from "../../stores/notes";
@@ -16,7 +15,7 @@ import { useFolderWatcherStore } from "../../stores/folderWatcher";
 import { buildMeetingNoteTemplate } from "../../services/meetingNotes";
 import { CalendarEvent } from "../../types";
 
-type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly" | "tickets";
+type View = "dashboard" | "tasks" | "calendar" | "notes" | "wiki" | "settings" | "weekly";
 
 export function Layout() {
   const [view, setView] = useState<View>("dashboard");
@@ -70,12 +69,11 @@ export function Layout() {
     setView("notes");
   }, [setActiveNote]);
 
-  function handleSearchNavigate(type: "note" | "task" | "wiki" | "git" | "ticket", id: string) {
+  function handleSearchNavigate(type: "note" | "task" | "wiki" | "git", id: string) {
     if (type === "note") { setView("notes"); setActiveNote(id); }
     else if (type === "task") { setView("tasks"); setFocusTaskId(id); }
     else if (type === "wiki") { setView("wiki"); setActiveWikiPage(id); }
     else if (type === "git") { setView("tasks"); }
-    else if (type === "ticket") { setView("tickets"); }
   }
 
   return (
@@ -88,7 +86,6 @@ export function Layout() {
         {view === "notes" && <NotesView />}
         {view === "wiki" && <WikiView />}
         {view === "weekly" && <WeeklyPlanView onAddMeetingNote={handleAddMeetingNote} />}
-        {view === "tickets" && <TicketsView />}
         {view === "settings" && <Settings />}
       </main>
       {searchOpen && (
