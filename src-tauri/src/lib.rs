@@ -104,11 +104,9 @@ pub fn run() {
                 }
             }
 
-            // Surface the app shortcuts in the native menus so they're
-            // discoverable. macOS conventions: creation commands live under
-            // File (Quick Capture creates a task/note), find/search under Edit
-            // (Search is the global find). Both default submenus already exist
-            // in the default menu — we append to them in place.
+            // macOS conventions: creation commands live under File (Quick
+            // Capture creates a task/note), find/search under Edit (Search is
+            // the global find), and Settings under the app menu after About.
             if let Some(menu) = app.menu() {
                 let search_item =
                     MenuItem::with_id(app, "menu-search", "Search…", true, Some("CmdOrCtrl+K"))?;
@@ -119,8 +117,27 @@ pub fn run() {
                     true,
                     Some("CmdOrCtrl+Shift+N"),
                 )?;
+                let settings_item = MenuItem::with_id(
+                    app,
+                    "menu-settings",
+                    "Settings…",
+                    true,
+                    Some("CmdOrCtrl+,"),
+                )?;
+                let mut is_first = true;
                 for item in menu.items()? {
                     if let MenuItemKind::Submenu(submenu) = item {
+                        // The first submenu in the default menu is the app menu
+                        // (titled with the app name) — Settings goes right after About.
+                        if is_first {
+                            if submenu.items()?.first().is_some() {
+                                let _ = submenu.insert(&settings_item, 1);
+                            } else {
+                                let _ = submenu.append(&settings_item);
+                            }
+                            is_first = false;
+                            continue;
+                        }
                         match submenu.text().ok().as_deref() {
                             Some("File") => {
                                 submenu.append(&PredefinedMenuItem::separator(app)?)?;
@@ -145,6 +162,9 @@ pub fn run() {
                     }
                     "menu-capture" => {
                         let _ = app_handle.emit("menu-capture", ());
+                    }
+                    "menu-settings" => {
+                        let _ = app_handle.emit("menu-settings", ());
                     }
                     _ => {}
                 }

@@ -61,10 +61,12 @@ export function Layout() {
 
     const unsearch = listen("menu-search", () => setSearchOpen(true));
     const uncapture = listen("menu-capture", () => setCaptureOpen(true));
+    const unsettings = listen("menu-settings", () => setView("settings"));
     return () => {
       window.removeEventListener("keydown", onKey);
       unsearch.then((f) => f());
       uncapture.then((f) => f());
+      unsettings.then((f) => f());
     };
   }, []);
 
