@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { Sidebar } from "./Sidebar";
 import { Dashboard } from "../dashboard/Dashboard";
 import { TaskList } from "../tasks/TaskList";
@@ -42,19 +43,29 @@ export function Layout() {
     setView("notes");
   }, [createNote, setActiveNote]);
 
+  // ⌘K / ⌘⇧N open search & quick capture. The same accelerators live on the
+  // native Edit menu (see src-tauri/src/lib.rs) — its events arrive here too.
+  // Handlers only *open* (never toggle) so a double fire can't close the modal.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setSearchOpen((v) => !v);
+        setSearchOpen(true);
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "N") {
         e.preventDefault();
-        setCaptureOpen((v) => !v);
+        setCaptureOpen(true);
       }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    const unsearch = listen("menu-search", () => setSearchOpen(true));
+    const uncapture = listen("menu-capture", () => setCaptureOpen(true));
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      unsearch.then((f) => f());
+      uncapture.then((f) => f());
+    };
   }, []);
 
   const handleNavigateTasks = useCallback((taskId?: string) => {

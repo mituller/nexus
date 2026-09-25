@@ -41,7 +41,7 @@ export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps
         >
           <Search size={14} />
           <span className="flex-1 text-left">Search…</span>
-          <kbd className="text-xs text-gray-600 border border-gray-700 rounded px-1">⌘K</kbd>
+          <kbd className="text-xs text-gray-400 border border-gray-700 rounded px-1">⌘K</kbd>
         </button>
         <button
           onClick={onCapture}
@@ -49,7 +49,7 @@ export function Sidebar({ current, onChange, onSearch, onCapture }: SidebarProps
         >
           <Zap size={14} />
           <span className="flex-1 text-left">Quick capture</span>
-          <kbd className="text-xs text-gray-600 border border-gray-700 rounded px-1">⇧⌘N</kbd>
+          <kbd className="text-xs text-gray-400 border border-gray-700 rounded px-1">⇧⌘N</kbd>
         </button>
       </div>
 

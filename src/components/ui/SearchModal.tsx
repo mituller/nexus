@@ -137,17 +137,17 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
     <div className="fixed inset-0 bg-black/40 flex items-start justify-center pt-24 z-50 px-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-xl overflow-hidden" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <Search size={16} className="text-gray-400 dark:text-gray-500 shrink-0" />
+          <Search size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Search notes, tasks, wiki, git…"
-            className="flex-1 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border-none outline-none bg-transparent" />
-          {query && <button onClick={() => setQuery("")} className="text-gray-300 dark:text-gray-600 hover:text-gray-500"><X size={14} /></button>}
-          <kbd className="hidden sm:inline-flex text-xs text-gray-400 dark:text-gray-600 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">esc</kbd>
+            className="flex-1 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 border-none outline-none bg-transparent" />
+          {query && <button onClick={() => setQuery("")} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"><X size={14} /></button>}
+          <kbd className="hidden sm:inline-flex text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">esc</kbd>
         </div>
 
         <div className="max-h-80 overflow-y-auto">
-          {!query && <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-8">Search notes, tasks, wiki, and git items.</p>}
-          {query && results.length === 0 && <p className="text-xs text-gray-400 dark:text-gray-600 text-center py-8">No results for "{query}"</p>}
+          {!query && <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">Search notes, tasks, wiki, and git items.</p>}
+          {query && results.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">No results for "{query}"</p>}
           {results.map((r, i) => (
             <button key={`${r.type}-${r.id}`} onClick={() => handleSelect(r)} onMouseEnter={() => setActive(i)}
               className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-gray-50 dark:border-gray-700 last:border-0
@@ -155,7 +155,7 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
               <span className={`mt-0.5 shrink-0 ${TYPE_COLOR[r.type]}`}>{TYPE_ICON[r.type]}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{renderTitle(r.title)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{r.excerpt}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{r.excerpt}</p>
               </div>
               <span className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded ${TYPE_BADGE[r.type]}`}>{TYPE_LABEL[r.type]}</span>
             </button>
@@ -163,10 +163,10 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
         </div>
 
         <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-600"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-700">↑↓</kbd> navigate</span>
-          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-600"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-700">↵</kbd> open</span>
-          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-600"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-700">esc</kbd> close</span>
-          <span className="ml-auto text-xs text-gray-300 dark:text-gray-600">{results.length > 0 ? `${results.length} result${results.length !== 1 ? "s" : ""}` : ""}</span>
+          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-700">↑↓</kbd> navigate</span>
+          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-700">↵</kbd> open</span>
+          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><kbd className="border border-gray-200 dark:border-gray-700 rounded px-1 bg-white dark:bg-gray-700">esc</kbd> close</span>
+          <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{results.length > 0 ? `${results.length} result${results.length !== 1 ? "s" : ""}` : ""}</span>
         </div>
       </div>
     </div>

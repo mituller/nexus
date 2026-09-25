@@ -1,4 +1,6 @@
 use tauri::Manager;
+use tauri::Emitter;
+use tauri::menu::{MenuItem, MenuItemKind, PredefinedMenuItem};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 /// Extract plain text from Office/RTF/PDF files using macOS textutil
@@ -101,6 +103,46 @@ pub fn run() {
                     let _ = window.set_icon(icon.clone());
                 }
             }
+
+            // Surface the app shortcuts (⌘K search, ⌘⇧N quick capture) in the
+            // native Edit menu so they're discoverable. The default menu already
+            // ships an Edit submenu — we append our items to it in place.
+            if let Some(menu) = app.menu() {
+                let search_item =
+                    MenuItem::with_id(app, "menu-search", "Search…", true, Some("CmdOrCtrl+K"))?;
+                let capture_item = MenuItem::with_id(
+                    app,
+                    "menu-capture",
+                    "Quick Capture…",
+                    true,
+                    Some("CmdOrCtrl+Shift+N"),
+                )?;
+                for item in menu.items()? {
+                    if let MenuItemKind::Submenu(submenu) = item {
+                        if submenu.text()? == "Edit" {
+                            submenu.append(&PredefinedMenuItem::separator(app)?)?;
+                            submenu.append(&search_item)?;
+                            submenu.append(&capture_item)?;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Menu clicks → frontend events (the webview also catches the same
+            // accelerators, but only *opens* the modals, so a double fire is harmless).
+            app.on_menu_event(move |app_handle, event| {
+                match event.id().as_ref() {
+                    "menu-search" => {
+                        let _ = app_handle.emit("menu-search", ());
+                    }
+                    "menu-capture" => {
+                        let _ = app_handle.emit("menu-capture", ());
+                    }
+                    _ => {}
+                }
+            });
+
             Ok(())
         })
         .plugin(
