@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <!-- TCC consent string. Without it macOS kills the process the moment it
+         touches the microphone. Tauri merges this file into the bundle's
+         Info.plist and embeds it in dev builds via __TEXT,__info_plist. -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Nexus records meetings and voice notes so it can transcribe them and label who said what.</string>
+  </dict>
+</plist>

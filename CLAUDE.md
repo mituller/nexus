@@ -35,7 +35,7 @@ HMR handles all TypeScript/React changes without a restart.
 
 **Frontend** (`src/`) — React + TypeScript in a Tauri WebView. All business logic and UI lives here. Communicates with Rust via `invoke()` and Tauri plugin APIs.
 
-**Backend** (`src-tauri/src/lib.rs`) — Thin Rust layer. Exposes two commands (`invoke_bedrock`, `extract_text_from_file`) and registers all plugins. All data manipulation happens in TypeScript.
+**Backend** (`src-tauri/src/lib.rs`) — Thin Rust layer. Registers all plugins and exposes the commands that need native access: `invoke_bedrock`, `extract_text_from_file`, and the audio ones (`start_recording`, `stop_recording`, `audio_level`, `start_transcription`, `stop_transcription`, implemented in `audio.rs` / `transcribe.rs`). All data manipulation happens in TypeScript.
 
 ### Data persistence — three stores
 
@@ -72,6 +72,23 @@ All AI calls go through the `invoke_bedrock` Tauri command in `src-tauri/src/lib
 The shared entry point is `src/services/bedrock.ts` → `callClaude(cfg, messages, maxTokens)`. Both `src/services/claude.ts` (briefing, note extraction) and `src/services/wikiAI.ts` (wiki ingest/query/lint) import from it.
 
 Token usage is tracked automatically in `src/services/tokenUsage.ts` — every `callClaude` call fires-and-forgets an accumulator.
+
+### Audio recording & speaker diarization — Rust-native capture
+
+The Notes section can record audio and produce a speaker-labelled (diarized) transcript. Mic capture happens in **Rust, not the WebView**: `WKWebView` doesn't reliably expose `navigator.mediaDevices` for `tauri://localhost` pages, and Rust capture gives Transcribe the raw PCM it wants.
+
+- `src-tauri/src/audio.rs` — a dedicated thread owns the `cpal` input stream (`cpal::Stream` is `!Send`), downmixes every device format to mono 16-bit PCM, and tees it to (a) a writer thread that streams a WAV file to `~/Library/Application Support/com.wsbeng.nexus/recordings/` and (b) an optional in-memory PCM sink. Nothing is buffered in RAM, so long meetings are safe.
+- `src-tauri/src/transcribe.rs` — Amazon Transcribe **streaming** with `show_speaker_label(true)`. `start_transcription` installs itself as the sink, aggregates ~100 ms audio events, and re-emits transcript results to the webview as `transcribe:update` events (`partial` / `final` / `ended` / `error`). Speaker ids (`spk_0`, `spk_1`, …) are Transcribe's own; naming them is the UI's job.
+- `src/services/audio.ts` → `src/components/notes/RecorderPanel.tsx` (launched by the mic button in `NotesList`). Recording produces a new note tagged `transcript`/`recording`; labels are baked into the note body as `**Name:** …`.
+
+Transcription always uses the AWS profile/region from Settings, **independent of the AI provider** setting — so OpenRouter users still need Bedrock credentials to transcribe.
+
+**macOS microphone permission is a build concern, not just a runtime prompt:**
+
+- `src-tauri/Info.plist` — `NSMicrophoneUsageDescription`. Without it macOS terminates the process the instant it opens the mic. Tauri merges it into the app bundle and embeds it in dev binaries (`__TEXT,__info_plist`), so `tauri dev` works too.
+- `src-tauri/Entitlements.plist` — `com.apple.security.device.audio-input`, wired through `bundle.macOS.entitlements`; required for signed/notarized builds.
+
+If the mic stops working after a rebuild, reset the TCC grant: `tccutil reset Microphone com.wsbeng.nexus`.
 
 ### External HTTP — plugin-http only
 

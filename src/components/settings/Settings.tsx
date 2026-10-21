@@ -6,6 +6,7 @@ import { useSettingsStore } from "../../stores/settings";
 import { AppSettings, ICalFeed, FEED_COLORS } from "../../types";
 import { getDailyUsage, getMonthlyUsage, estimateCost, formatTokens, formatCost, PeriodUsage } from "../../services/tokenUsage";
 import { aiConfigFromSettings, hasAIConfig } from "../../services/claude";
+import { transcriptionLanguages } from "../../services/audio";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 
 export function Settings() {
@@ -220,6 +221,27 @@ export function Settings() {
             <Field label="Model ID" type="text" placeholder="us.anthropic.claude-sonnet-4-6" {...field("bedrockModelId")} />
           </>
         )}
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1">
+            Transcription language
+          </label>
+          <select
+            value={local.transcribeLanguage}
+            onChange={(e) => setLocal((p) => ({ ...p, transcribeLanguage: e.target.value }))}
+            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+          >
+            {transcriptionLanguages().map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+            Used when recording audio in Notes. Speaker labelling runs through Amazon Transcribe
+            with the AWS profile and region above, so it needs the same credentials as Bedrock —
+            whatever provider is selected for other AI features.
+          </p>
+        </div>
         <TokenUsageDisplay />
       </Section>
 

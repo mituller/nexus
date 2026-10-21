@@ -3,6 +3,55 @@ use tauri::Emitter;
 use tauri::menu::{MenuItem, MenuItemKind, PredefinedMenuItem};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+mod audio;
+mod transcribe;
+
+/// Start capturing the microphone. Audio is held in memory until stopped.
+#[tauri::command]
+async fn start_recording(app: tauri::AppHandle) -> Result<audio::RecordingInfo, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("recordings");
+    tauri::async_runtime::spawn_blocking(move || audio::start(dir))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Stop capture, write the recording to a WAV file and return its path.
+#[tauri::command]
+async fn stop_recording() -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(audio::stop)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Peak amplitude (0..1) of the most recent audio callback, for the level meter.
+#[tauri::command]
+fn audio_level() -> f32 {
+    audio::level()
+}
+
+/// Open a diarized (speaker-labelled) Amazon Transcribe streaming session that
+/// consumes the in-progress recording. Results arrive as `transcribe:update`
+/// events.
+#[tauri::command]
+async fn start_transcription(
+    app: tauri::AppHandle,
+    profile: String,
+    region: String,
+    language: String,
+    sample_rate: u32,
+) -> Result<String, String> {
+    transcribe::start(app, profile, region, language, sample_rate).await
+}
+
+#[tauri::command]
+fn stop_transcription() -> Result<(), String> {
+    transcribe::stop()
+}
+
 /// Extract plain text from Office/RTF/PDF files using macOS textutil
 #[tauri::command]
 async fn extract_text_from_file(path: String) -> Result<String, String> {
@@ -194,7 +243,15 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![invoke_bedrock, extract_text_from_file])
+        .invoke_handler(tauri::generate_handler![
+            invoke_bedrock,
+            extract_text_from_file,
+            start_recording,
+            stop_recording,
+            audio_level,
+            start_transcription,
+            stop_transcription
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

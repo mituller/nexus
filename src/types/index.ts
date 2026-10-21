@@ -89,6 +89,15 @@ export interface WikiPageDraft {
 
 export type NoteSourceType = "manual" | "transcript";
 
+/** A contiguous stretch of speech attributed to one speaker. */
+export interface TranscriptSegment {
+  /** Transcribe's anonymous label, e.g. "spk_0". */
+  speaker: string;
+  text: string;
+  startMs: number;
+  endMs: number;
+}
+
 export interface Note {
   id: string;
   title: string;
@@ -152,6 +161,8 @@ export interface AppSettings {
   // OpenRouter
   openRouterApiKey: string;
   openRouterModel: string;
+  // Audio transcription (Amazon Transcribe, uses the AWS profile above)
+  transcribeLanguage: string;
   // Watched folder
   watchFolderEnabled: boolean;
   watchFolderPath: string;
@@ -178,6 +189,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   bedrockModelId: "us.anthropic.claude-sonnet-4-6",
   openRouterApiKey: "",
   openRouterModel: "~anthropic/claude-sonnet-latest",
+  transcribeLanguage: "en-US",
   // Watched folder
   watchFolderEnabled: false,
   watchFolderPath: "",

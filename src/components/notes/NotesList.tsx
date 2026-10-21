@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Plus, Search, FileText, Upload, Mail, Trash2, BadgeCheck } from "lucide-react";
+import { Plus, Search, FileText, Upload, Mail, Trash2, BadgeCheck, Mic } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNotesStore } from "../../stores/notes";
 
 interface NotesListProps {
   onImportTranscript: () => void;
+  onRecord: () => void;
 }
 
-export function NotesList({ onImportTranscript }: NotesListProps) {
+export function NotesList({ onImportTranscript, onRecord }: NotesListProps) {
   const { notes, activeNoteId, create, remove, setActive } = useNotesStore();
   const [search, setSearch] = useState("");
 
@@ -36,6 +37,13 @@ export function NotesList({ onImportTranscript }: NotesListProps) {
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
           >
             <Plus size={14} /> New note
+          </button>
+          <button
+            onClick={onRecord}
+            title="Record audio"
+            className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-md text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-red-500 transition-colors"
+          >
+            <Mic size={15} />
           </button>
           <button
             onClick={onImportTranscript}
