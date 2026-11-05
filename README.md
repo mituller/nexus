@@ -173,7 +173,7 @@ Tests sit next to the code they cover as `src/**/*.test.ts` and cover utilities,
 ### CI and security scanning
 
 GitHub Actions workflows live in `.github/workflows/`:
-- `github-ci.yml` — runs `npm test` on pushes to `main` and on pull requests
+- `github-ci.yml` — type-checks and builds the frontend, then runs `npm test`, on pushes to `main` and on pull requests
 - `codeql.yml` — scans TypeScript and Rust with CodeQL on pushes to `main`, on pull requests, and weekly
 
 GitHub secret scanning and push protection are enabled in the repository settings, and results from both appear in the repository's **Security** tab.

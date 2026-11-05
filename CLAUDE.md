@@ -117,7 +117,7 @@ Tests use Vitest and sit next to the code as `src/**/*.test.ts`. They cover util
 - Mock the boundary below the code under test: `@tauri-apps/plugin-sql` and `@tauri-apps/plugin-http` for services, `../services/*` for stores.
 - Mark a confirmed bug you aren't fixing yet with `it.fails("KNOWN BUG: ...")`. It starts failing once the bug is fixed, which is the cue to change it to `it`.
 
-GitHub Actions runs `npm test` (`.github/workflows/github-ci.yml`) and CodeQL for TypeScript and Rust (`.github/workflows/codeql.yml`).
+GitHub Actions runs `npm run build` and `npm test` (`.github/workflows/github-ci.yml`). The build is what type-checks: Vitest doesn't compile components, so a broken `.tsx` file can still pass `npm test`. and CodeQL for TypeScript and Rust (`.github/workflows/codeql.yml`).
 
 ### Git — GitLab or GitHub
 
