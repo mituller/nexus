@@ -2,6 +2,8 @@ import ICAL from "ical.js";
 import { fetch } from "@tauri-apps/plugin-http";
 import { CalendarEvent, Attendee, ICalFeed } from "../types";
 
+const MAX_OCCURRENCES_SCANNED = 50_000;
+
 export async function fetchAndParseICalFeed(
   feed: ICalFeed,
   start: Date,
@@ -25,13 +27,28 @@ function parseICalText(
   const comp = new ICAL.Component(jcalData);
   const vevents = comp.getAllSubcomponents("vevent");
 
-  const start = ICAL.Time.fromDateTimeString(rangeStart.toISOString());
-  const end = ICAL.Time.fromDateTimeString(rangeEnd.toISOString());
+  // ICAL.Event would otherwise relate every RECURRENCE-ID in the feed to every
+  // series, moving occurrences of unrelated series that share a start time.
+  const exceptionsByUid = new Map<string, ICAL.Component[]>();
+  for (const vevent of vevents) {
+    if (!vevent.hasProperty("recurrence-id")) continue;
+    const uid = vevent.getFirstPropertyValue("uid") as string;
+    exceptionsByUid.set(uid, [...(exceptionsByUid.get(uid) ?? []), vevent]);
+  }
+
+  // Compare as JS dates: a DATE value has no timezone, and ICAL.Time.compare
+  // would read it as midnight UTC rather than local midnight.
+  const start = rangeStart.getTime();
+  const end = rangeEnd.getTime();
 
   const events: CalendarEvent[] = [];
 
   for (const vevent of vevents) {
-    const event = new ICAL.Event(vevent);
+    const isException = vevent.hasProperty("recurrence-id");
+    const uid = vevent.getFirstPropertyValue("uid") as string;
+    const event = new ICAL.Event(vevent, {
+      exceptions: isException ? [] : exceptionsByUid.get(uid) ?? [],
+    });
 
     try {
       if (event.isRecurring()) {
@@ -39,18 +56,24 @@ function parseICalText(
         let next: ICAL.Time | null;
         let safetyCount = 0;
 
-        while ((next = iter.next()) && safetyCount < 200) {
+        // Occurrences are counted from DTSTART, so the cap has to allow for
+        // series that began years before the range.
+        while ((next = iter.next()) && safetyCount < MAX_OCCURRENCES_SCANNED) {
           safetyCount++;
-          if (next.compare(end) > 0) break;
-          if (next.compare(start) >= 0) {
+          const occurrence = next.toJSDate().getTime();
+          if (occurrence > end) break;
+          if (occurrence >= start) {
             const detail = event.getOccurrenceDetails(next);
-            events.push(icalEventToCalendarEvent(event, detail.startDate, detail.endDate, feed));
+            // A rescheduled occurrence is emitted from its own VEVENT below,
+            // which also covers one moved into or out of the range.
+            if (detail.item.isRecurrenceException() && detail.item.recurrenceId.compare(next) === 0) continue;
+            events.push(icalEventToCalendarEvent(detail.item, detail.startDate, detail.endDate, feed));
           }
         }
       } else {
         const evStart = event.startDate;
         const evEnd = event.endDate ?? evStart.clone();
-        if (evStart.compare(end) < 0 && evEnd.compare(start) > 0) {
+        if (evStart.toJSDate().getTime() < end && evEnd.toJSDate().getTime() > start) {
           events.push(icalEventToCalendarEvent(event, evStart, evEnd, feed));
         }
       }

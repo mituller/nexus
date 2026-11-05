@@ -15,6 +15,9 @@ source ~/.cargo/env && npm run tauri dev
 # Type-check + build frontend only
 npm run build
 
+# Run the frontend tests once (or `npm run test:watch`)
+npm test
+
 # Compile Rust backend only
 cd src-tauri && cargo build
 
@@ -135,4 +138,4 @@ In `WikiPageList.tsx`, meetings with `" – Month D, YYYY"` suffix are grouped u
 
 **Event dates:** use `format(new Date(e.start), "yyyy-MM-dd")` for local-timezone date comparisons.
 
-**All-day events:** use `isAllDay(event)` from `src/utils/calendar.ts` — checks local midnight start + 24h multiple duration.
+**All-day events:** use `isAllDay(event)` from `src/utils/calendar.ts` — checks that start and end are both at local midnight.

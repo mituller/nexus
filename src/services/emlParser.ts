@@ -19,10 +19,21 @@ function decodeBase64Utf8(b64: string): string {
   }
 }
 
-function decodeQuotedPrintable(text: string): string {
+function decodeBytes(bytes: Uint8Array, charset: string): string {
+  try {
+    return new TextDecoder(charset).decode(bytes);
+  } catch {
+    // Unknown charset label
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+}
+
+function decodeQuotedPrintable(text: string, charset: string): string {
   return text
     .replace(/=\r?\n/g, "")
-    .replace(/=([0-9A-Fa-f]{2})/g, (_: string, h: string) => String.fromCharCode(parseInt(h, 16)));
+    // Decode whole runs together, since one character can span several =XX bytes
+    .replace(/(?:=[0-9A-Fa-f]{2})+/g, (run: string) =>
+      decodeBytes(Uint8Array.from(run.slice(1).split("="), (h) => parseInt(h, 16)), charset));
 }
 
 // Decode RFC 2047 encoded words =?UTF-8?B?...?= or =?UTF-8?Q?...?=
@@ -82,7 +93,10 @@ function parseMimePart(raw: string): { headers: Record<string, string>; body: st
 function decodePart(headers: Record<string, string>, body: string): string {
   const cte = (headers["content-transfer-encoding"] ?? "").toLowerCase().trim();
   if (cte === "base64") return decodeBase64Utf8(body);
-  if (cte === "quoted-printable") return decodeQuotedPrintable(body);
+  if (cte === "quoted-printable") {
+    const charset = headers["content-type"]?.match(/charset=["']?([^"';\s]+)/i)?.[1] ?? "utf-8";
+    return decodeQuotedPrintable(body, charset);
+  }
   return body;
 }
 

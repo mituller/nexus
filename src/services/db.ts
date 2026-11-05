@@ -48,10 +48,11 @@ export async function updateTask(id: string, updates: Partial<Omit<Task, "id" | 
   let i = 1;
 
   if (updates.title !== undefined) { fields.push(`title = $${i++}`); values.push(updates.title); }
-  if (updates.description !== undefined) { fields.push(`description = $${i++}`); values.push(updates.description); }
+  // Optional fields: a key present with an undefined value means "clear it"
+  if ("description" in updates) { fields.push(`description = $${i++}`); values.push(updates.description ?? null); }
   if (updates.status !== undefined) { fields.push(`status = $${i++}`); values.push(updates.status); }
   if (updates.priority !== undefined) { fields.push(`priority = $${i++}`); values.push(updates.priority); }
-  if (updates.dueDate !== undefined) { fields.push(`due_date = $${i++}`); values.push(updates.dueDate); }
+  if ("dueDate" in updates) { fields.push(`due_date = $${i++}`); values.push(updates.dueDate ?? null); }
   if (updates.tags !== undefined) { fields.push(`tags = $${i++}`); values.push(JSON.stringify(updates.tags)); }
 
   fields.push(`updated_at = $${i++}`);
