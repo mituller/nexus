@@ -1,8 +1,8 @@
 import { useState, useMemo, memo, useRef, useEffect } from "react";
-import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon, FileText, Search } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon, FileText, Search, RefreshCw, AlertCircle } from "lucide-react";
 import { format, parseISO, isBefore } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
-import { useGitStore, GIT_PROVIDER_LABEL } from "../../stores/git";
+import { useGitStore, GIT_PROVIDER_LABEL, gitErrorMessage } from "../../stores/git";
 import { useSettingsStore } from "../../stores/settings";
 import { Task } from "../../types";
 import { GitIssue, GitMR } from "../../types/git";
@@ -37,7 +37,9 @@ interface TaskListProps {
 
 export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListProps = {}) {
   const { tasks, add, complete, remove, update } = useTaskStore();
-  const { issues, mrs, connected: gitConnected, openIssue, closeIssue, provider } = useGitStore();
+  const { issues, mrs, connected: gitConnected, loading: gitLoading, error: gitError, fetch: fetchGit, openIssue, closeIssue, provider } = useGitStore();
+  const { settings } = useSettingsStore();
+  const hasGitToken = settings.gitProvider === "github" ? !!settings.githubToken : !!settings.gitlabToken;
   const gitLabel = GIT_PROVIDER_LABEL[provider];
   const [showForm, setShowForm] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -118,6 +120,17 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {hasGitToken && (
+            <button
+              onClick={fetchGit}
+              disabled={gitLoading}
+              title={`Refresh ${GIT_PROVIDER_LABEL[settings.gitProvider]} items`}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={gitLoading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          )}
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
@@ -183,6 +196,17 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
             <TaskRow key={task.id} task={task} onComplete={complete} onDelete={remove} onUpdate={update} onOpenNote={onOpenNote} highlight={task.id === highlightId} />
           ))}
         </div>
+      )}
+
+      {gitError && (
+        <div className="mt-8 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <AlertCircle size={14} className="shrink-0" />
+          {gitErrorMessage(gitError, provider)}
+        </div>
+      )}
+
+      {gitConnected && !gitLoading && issues.length === 0 && (
+        <p className="mt-8 text-sm text-gray-400 dark:text-gray-500">No open {gitLabel} issues assigned to you.</p>
       )}
 
       {/* Git issues */}
