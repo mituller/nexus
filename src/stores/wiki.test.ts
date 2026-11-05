@@ -102,3 +102,31 @@ describe("category expansion", () => {
     expect(useWikiStore.getState().expandedCategories[people]).toBe(true);
   });
 });
+
+describe("loading and saving", () => {
+  it("loads the pages and stops loading", async () => {
+    vi.mocked(db.getWikiPages).mockResolvedValue([page("a")]);
+    await useWikiStore.getState().load();
+    expect(useWikiStore.getState().pages).toEqual([page("a")]);
+    expect(useWikiStore.getState().loading).toBe(false);
+  });
+
+  it("adds a new page in title order and opens it", async () => {
+    useWikiStore.setState({ pages: [page("c", "Carol")] });
+    vi.mocked(db.createWikiPage).mockResolvedValue(page("a", "Ann"));
+    const draft = { title: "Ann", content: "", entityType: "general" as const, tags: [], sourceIds: [] };
+
+    await useWikiStore.getState().create(draft);
+
+    expect(useWikiStore.getState().pages.map((p) => p.title)).toEqual(["Ann", "Carol"]);
+    expect(useWikiStore.getState().activePageId).toBe("a");
+  });
+
+  it("saves an edit and only changes that page", async () => {
+    useWikiStore.setState({ pages: [page("a"), page("b")] });
+    await useWikiStore.getState().update("a", { content: "New" });
+    expect(db.updateWikiPage).toHaveBeenCalledWith("a", { content: "New" });
+    expect(useWikiStore.getState().pages.map((p) => p.content)).toEqual(["New", ""]);
+    expect(useWikiStore.getState().pages[0].updatedAt).not.toBe("u");
+  });
+});

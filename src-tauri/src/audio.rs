@@ -407,3 +407,120 @@ fn wav_header(data_len: u32, sample_rate: u32) -> Vec<u8> {
     header.extend_from_slice(&data_len.to_le_bytes());
     header
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mono<T: cpal::SizedSample>(mut samples: Vec<T>, channels: u16) -> Vec<i16> {
+        let len = samples.len();
+        // SAFETY: `samples` matches T's format and outlives `data`.
+        let data = unsafe { cpal::Data::from_parts(samples.as_mut_ptr().cast(), len, T::FORMAT) };
+        to_mono_i16(&data, channels)
+    }
+
+    fn temp_wav(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("nexus-test-{}-{name}.wav", std::process::id()))
+    }
+
+    #[test]
+    fn f32_samples_scale_and_clamp() {
+        assert_eq!(f32_to_i16(0.0), 0);
+        assert_eq!(f32_to_i16(1.0), i16::MAX);
+        assert_eq!(f32_to_i16(-1.0), -i16::MAX);
+        assert_eq!(f32_to_i16(2.0), i16::MAX);
+        assert_eq!(f32_to_i16(-2.0), -i16::MAX);
+    }
+
+    #[test]
+    fn every_sample_format_converts_to_i16() {
+        assert_eq!(mono(vec![0.5f32, -1.0], 1), vec![16383, -32767]);
+        assert_eq!(mono(vec![1.0f64, 0.0], 1), vec![32767, 0]);
+        assert_eq!(mono(vec![5i16, -5], 1), vec![5, -5]);
+        assert_eq!(mono(vec![0u16, 32768, 65535], 1), vec![-32768, 0, 32767]);
+        assert_eq!(mono(vec![i32::MAX, i32::MIN, 0], 1), vec![32767, -32768, 0]);
+        assert_eq!(mono(vec![0u32, 0x8000_0000, u32::MAX], 1), vec![-32768, 0, 32767]);
+    }
+
+    #[test]
+    fn unsupported_formats_produce_no_audio() {
+        assert!(mono(vec![1i8, 2], 1).is_empty());
+    }
+
+    #[test]
+    fn channels_are_averaged_to_mono() {
+        assert_eq!(mono(vec![100i16, 300, -100, -300], 2), vec![200, -200]);
+        assert_eq!(mono(vec![30i16, 60, 90], 3), vec![60]);
+        // Summing in i32 means loud frames can't overflow.
+        assert_eq!(mono(vec![i16::MAX, i16::MAX], 2), vec![i16::MAX]);
+    }
+
+    #[test]
+    fn zero_channels_is_treated_as_mono() {
+        assert_eq!(mono(vec![1i16, 2], 0), vec![1, 2]);
+    }
+
+    #[test]
+    fn wav_header_describes_16_bit_mono_pcm() {
+        let header = wav_header(100, 16_000);
+        let u16_at = |i: usize| u16::from_le_bytes([header[i], header[i + 1]]);
+        let u32_at = |i: usize| u32::from_le_bytes(header[i..i + 4].try_into().unwrap());
+
+        assert_eq!(header.len(), 44);
+        assert_eq!(&header[0..4], b"RIFF");
+        assert_eq!(u32_at(4), 136);
+        assert_eq!(&header[8..16], b"WAVEfmt ");
+        assert_eq!(u32_at(16), 16);
+        assert_eq!(u16_at(20), 1, "PCM");
+        assert_eq!(u16_at(22), 1, "channels");
+        assert_eq!(u32_at(24), 16_000, "sample rate");
+        assert_eq!(u32_at(28), 32_000, "byte rate");
+        assert_eq!(u16_at(32), 2, "block align");
+        assert_eq!(u16_at(34), 16, "bits per sample");
+        assert_eq!(&header[36..40], b"data");
+        assert_eq!(u32_at(40), 100);
+    }
+
+    #[test]
+    fn write_audio_streams_samples_and_patches_the_sizes() {
+        let path = temp_wav("streams");
+        let (tx, rx) = mpsc::channel();
+        tx.send(vec![1i16, -1]).unwrap();
+        tx.send(vec![256i16]).unwrap();
+        drop(tx);
+
+        write_audio(rx, path.clone(), 16_000).unwrap();
+
+        let bytes = std::fs::read(&path).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        assert_eq!(&bytes[..44], wav_header(6, 16_000).as_slice());
+        assert_eq!(&bytes[44..], &[1, 0, 0xFF, 0xFF, 0, 1]);
+    }
+
+    #[test]
+    fn write_audio_removes_the_file_when_nothing_was_captured() {
+        let path = temp_wav("empty");
+        let (tx, rx) = mpsc::channel::<Vec<i16>>();
+        drop(tx);
+
+        let error = write_audio(rx, path.clone(), 16_000).unwrap_err();
+
+        assert_eq!(error, "No audio was captured");
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn write_audio_reports_a_path_it_cannot_create() {
+        let (_tx, rx) = mpsc::channel::<Vec<i16>>();
+        let path = std::env::temp_dir().join("nexus-test-missing-dir").join("a.wav");
+        assert!(write_audio(rx, path, 16_000).unwrap_err().starts_with("Could not write WAV"));
+    }
+
+    #[test]
+    fn recordings_are_named_wav_files_in_the_folder() {
+        let path = recording_path(&PathBuf::from("/recordings")).unwrap();
+        assert_eq!(path.parent().unwrap(), PathBuf::from("/recordings"));
+        let name = path.file_name().unwrap().to_str().unwrap();
+        assert!(name.starts_with("recording-") && name.ends_with(".wav"), "{name}");
+    }
+}

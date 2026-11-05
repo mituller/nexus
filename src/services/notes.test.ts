@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createNote, getNoteById, getNotes, updateNote } from "./notes";
+import {
+  createNote, deleteNote, getNoteById, getNotes, linkNoteTask, markNoteExtracted, resetNoteWikiProcessed, updateNote,
+} from "./notes";
 
 const fake = vi.hoisted(() => ({ select: vi.fn(), execute: vi.fn() }));
 
@@ -76,5 +78,37 @@ describe("updateNote", () => {
     expect(sql).toBe("UPDATE notes SET content = $1, wiki_processed_at = NULL, tags = $2, updated_at = $3 WHERE id = $4");
     expect(params[0]).toBe("New");
     expect(params[3]).toBe("n1");
+  });
+});
+
+describe("deleteNote", () => {
+  it("deletes by id", async () => {
+    await deleteNote("n1");
+    expect(fake.execute).toHaveBeenCalledWith("DELETE FROM notes WHERE id = $1", ["n1"]);
+  });
+});
+
+describe("linkNoteTask", () => {
+  it("links once, ignoring a link that already exists", async () => {
+    await linkNoteTask("n1", "t1");
+    const [sql, values] = fake.execute.mock.lastCall!;
+    expect(sql).toContain("INSERT OR IGNORE INTO note_tasks");
+    expect(values).toEqual(["n1", "t1"]);
+  });
+});
+
+describe("processing marks", () => {
+  it("queues a note for wiki ingest again", async () => {
+    await resetNoteWikiProcessed("n1");
+    const [sql, values] = fake.execute.mock.lastCall!;
+    expect(sql).toContain("wiki_processed_at = NULL");
+    expect(values[1]).toBe("n1");
+  });
+
+  it("records when tasks were extracted", async () => {
+    await markNoteExtracted("n1");
+    const [sql, values] = fake.execute.mock.lastCall!;
+    expect(sql).toContain("extracted_at = $1");
+    expect(values[2]).toBe("n1");
   });
 });

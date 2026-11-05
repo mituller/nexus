@@ -76,7 +76,7 @@ Global search ⌘K — notes, tasks, wiki pages, and GitLab or GitHub issues. Is
 | Git | GitLab REST API v4 or GitHub REST API (personal access token) |
 | File access | tauri-plugin-fs, tauri-plugin-dialog |
 | Notifications | tauri-plugin-notification |
-| Tests | Vitest |
+| Tests | Vitest, React Testing Library, cargo test |
 | CI | GitHub Actions, CodeQL |
 
 ---
@@ -163,8 +163,14 @@ npm run build
 npm test
 npm run test:watch
 
+# Frontend tests with a coverage report (HTML in coverage/)
+npm run test:coverage
+
 # Rust backend only
 cd src-tauri && cargo build
+
+# Rust tests
+cd src-tauri && cargo test
 
 # Full dev mode (Vite + Tauri + HMR)
 source ~/.cargo/env && npm run tauri dev
@@ -180,12 +186,14 @@ source ~/.cargo/env && npm run tauri build
 
 ### Tests
 
-Tests sit next to the code they cover as `src/**/*.test.ts` and cover utilities, services, and stores, with the Tauri and SQLite layers mocked. They run in the `America/New_York` timezone so date mistakes fail on any machine. React components and the Rust backend don't have tests yet.
+Frontend tests sit next to the code they cover as `src/**/*.test.{ts,tsx}` and cover utilities, services, stores, and the main task and search components, with the Tauri and SQLite layers mocked. They run in the `America/New_York` timezone so date mistakes fail on any machine.
+
+Rust tests cover audio conversion, WAV writing, and transcript grouping. Microphone capture and calls to AWS aren't tested.
 
 ### CI and security scanning
 
 GitHub Actions workflows live in `.github/workflows/`:
-- `github-ci.yml` — type-checks and builds the frontend, then runs `npm test`, on pushes to `main` and on pull requests
+- `github-ci.yml` — type-checks and builds the frontend, runs the frontend tests with coverage (totals appear in the job summary), and runs the Rust tests on macOS, on pushes to `main` and on pull requests
 - `codeql.yml` — scans TypeScript and Rust with CodeQL on pushes to `main`, on pull requests, and weekly
 
 GitHub secret scanning and push protection are enabled in the repository settings, and results from both appear in the repository's **Security** tab.

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTask, deleteTask, getTasks, updateTask } from "./db";
+import { createTask, deleteTask, getAllTasks, getTasks, updateTask } from "./db";
 
 const fake = vi.hoisted(() => ({ select: vi.fn(), execute: vi.fn() }));
 
@@ -110,5 +110,12 @@ describe("deleteTask", () => {
   it("deletes by id", async () => {
     await deleteTask("t1");
     expect(lastExecute().params).toEqual(["t1"]);
+  });
+});
+
+describe("getAllTasks", () => {
+  it("lists every task, newest first", async () => {
+    await getAllTasks();
+    expect(fake.select.mock.lastCall![0]).toBe("SELECT * FROM tasks ORDER BY created_at DESC");
   });
 });

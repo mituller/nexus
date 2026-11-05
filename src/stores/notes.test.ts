@@ -56,3 +56,12 @@ describe("useNotesStore", () => {
     expect(useNotesStore.getState().activeNoteId).toBe("a");
   });
 });
+
+describe("load", () => {
+  it("loads the notes and stops loading", async () => {
+    vi.mocked(db.getNotes).mockResolvedValue([note("a")]);
+    await useNotesStore.getState().load();
+    expect(useNotesStore.getState().notes).toEqual([note("a")]);
+    expect(useNotesStore.getState().loading).toBe(false);
+  });
+});
