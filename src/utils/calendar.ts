@@ -1,12 +1,15 @@
 import { format, parseISO, isBefore } from "date-fns";
 import { CalendarEvent } from "../types";
 
-/** True for all-day events (starts at local midnight, duration is a whole-day multiple) */
+/**
+ * True for all-day events (starts and ends at local midnight). Checks the end's
+ * clock time, not the duration, because daylight-saving days aren't 24 hours long.
+ */
 export function isAllDay(event: CalendarEvent): boolean {
   const s = new Date(event.start);
-  const ms = new Date(event.end).getTime() - s.getTime();
-  return s.getHours() === 0 && s.getMinutes() === 0 && s.getSeconds() === 0
-    && ms > 0 && ms % (24 * 60 * 60 * 1000) === 0;
+  const e = new Date(event.end);
+  const atMidnight = (d: Date) => d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0;
+  return atMidnight(s) && atMidnight(e) && e.getTime() > s.getTime();
 }
 
 /** True if an ISO date string is in the past */

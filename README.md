@@ -1,6 +1,6 @@
 # Nexus
 
-A personal knowledge management desktop app that unifies your calendar, tasks, notes, tickets, and a self-building wiki into a single daily workspace — powered by AWS Bedrock (Claude).
+A personal knowledge management desktop app that unifies your calendar, tasks, notes, git issues, and a self-building wiki into a single daily workspace — powered by AI through AWS Bedrock or OpenRouter.
 
 <img src="src-tauri/icons/icon.svg" alt="Nexus" width="256" height="256" />
 
@@ -9,28 +9,27 @@ A personal knowledge management desktop app that unifies your calendar, tasks, n
 ## Features
 
 ### Dashboard
-AI-generated morning briefing with a narrative summary of your day. Stats bar shows meetings, high-priority tasks, and overdue items (tasks + GitLab items + Freshservice tickets). Heads-up alerts for back-to-back meetings, tentative events, and scheduling conflicts. Meeting cards link directly to Teams and let you create meeting notes in one click.
+AI-generated morning briefing with a narrative summary of your day. Stats bar shows meetings, high-priority tasks, and overdue items (tasks + GitLab or GitHub items). Heads-up alerts for back-to-back meetings, tentative events, and scheduling conflicts. Meeting cards link directly to Teams and let you create meeting notes in one click.
 
 ### Calendar
-Week and month views fed by iCal URLs — Outlook, Google Calendar, Apple Calendar, or any `.ics` feed. Click any event to open a detail popup with attendee info, Teams join link, and meeting notes creation. All-day events pinned in a strip above the time grid. Background pre-fetch keeps navigation instant.
+Week and month views fed by iCal URLs — Outlook, Google Calendar, Apple Calendar, or any `.ics` feed. Click any event to open a detail popup with attendee info, Teams join link, and meeting notes creation. All-day events pinned in a strip above the time grid. Recurring series are expanded with their exclusions and rescheduled occurrences applied. Background pre-fetch keeps navigation instant.
 
 ### Week Ahead
-7-day planning view: full calendar for the week + tasks, GitLab items, and Freshservice tickets due or overdue that week. AI overview generates a week narrative (cached, regenerates each day). Task checkboxes let you close items directly from this view.
+7-day planning view: full calendar for the week + tasks and GitLab or GitHub items due or overdue that week. AI overview generates a week narrative (cached, regenerates each day). Task checkboxes let you close items directly from this view.
 
 ### Tasks
-Full task manager sorted by priority. Filter by priority, source, or tag (searchable combobox). Done tasks stay in place with strikethrough — delete when ready. Tasks created from notes have a link back to the source note. GitLab issues and MRs displayed below personal tasks. Create a GitLab issue from any task. Task count badge in sidebar.
-
-### Tickets
-Freshservice tickets assigned to you — open and pending. Status, priority, category, and due date. Ticket count badge in sidebar.
+Full task manager sorted by priority. Filter by priority, source, or tag (searchable combobox). Done tasks stay in place with strikethrough — delete when ready. Tasks created from notes have a link back to the source note. GitLab or GitHub issues and merge/pull requests displayed below personal tasks. With GitLab, create an issue from any task. Task count badge in sidebar.
 
 ### Notes
 Markdown editor with autosave and live preview. Import files via drag-and-drop or browse:
-- **`.eml`** — emails (parses MIME, extracts body, handles base64/quoted-printable)
+- **`.eml`** — emails (parses MIME, extracts body, handles base64/quoted-printable and declared charsets)
 - **`.vtt`** — Teams/Zoom transcripts (strips timestamps, groups by speaker)
 - **`.txt` / `.md`** — plain text
 - **`.docx` / `.doc` / `.rtf` / `.pdf`** — extracted via macOS `textutil`
 
 AI extraction pulls out action items with fuzzy deduplication against existing tasks (skip, update, or create new). Extracted notes are marked with a badge and re-queued for wiki ingest automatically when re-extracted.
+
+**Audio recording** — the mic button records a meeting and produces a live, speaker-labelled transcript through Amazon Transcribe. Name the speakers, then save it as a new note.
 
 **Watched folder** — configure a folder path in Settings; Nexus scans it every 30 seconds and auto-imports any supported files. Processed files move to `_processed/` subfolder. Badge in sidebar shows new imports.
 
@@ -42,7 +41,7 @@ Karpathy-style compiled knowledge base. AI ingests notes and builds wiki pages p
 Natural language query, lint check for orphaned pages and broken cross-links, force-directed graph view. Clicking a graph node opens that page. Deleting a wiki page resets the source notes so they re-queue for ingest. Editing note content automatically re-queues it.
 
 ### Search
-Global search ⌘K — notes, tasks, wiki pages, GitLab items, and Freshservice tickets. GitLab and ticket results open in the browser.
+Global search ⌘K — notes, tasks, wiki pages, and GitLab or GitHub issues. Issue results open in the browser.
 
 ### Quick Capture
 ⇧⌘N anywhere — floating modal to create a task or note without leaving the current view.
@@ -59,12 +58,14 @@ Global search ⌘K — notes, tasks, wiki pages, GitLab items, and Freshservice 
 | State | Zustand |
 | Database | SQLite via tauri-plugin-sql |
 | Settings / cache | JSON store via tauri-plugin-store |
-| AI | AWS Bedrock — Claude Sonnet (via Rust `invoke_bedrock` command) |
+| AI | AWS Bedrock (via Rust `invoke_bedrock` command) or OpenRouter |
+| Audio | cpal capture, Amazon Transcribe streaming (Rust) |
 | Calendar | iCal / ICS feeds (any provider) |
-| GitLab | GitLab REST API v2 (personal access token) |
-| Freshservice | Freshservice REST API v2 (API key) |
+| Git | GitLab REST API v4 or GitHub REST API (personal access token) |
 | File access | tauri-plugin-fs, tauri-plugin-dialog |
 | Notifications | tauri-plugin-notification |
+| Tests | Vitest |
+| CI | GitHub Actions, CodeQL |
 
 ---
 
@@ -99,8 +100,10 @@ Add one or more iCal feed URLs:
 - **Google:** Calendar Settings → your calendar → *Secret address in iCal format*
 - Any `.ics` URL works
 
-### AI — AWS Bedrock (`Settings → Claude AI`)
-Nexus uses your existing AWS credentials — no Anthropic API account needed.
+### AI (`Settings → AI`)
+Choose a provider: AWS Bedrock or OpenRouter.
+
+**AWS Bedrock** uses your existing AWS credentials — no Anthropic API account needed.
 
 1. Create an IAM user with only `bedrock:InvokeModel` on `*`
 2. Add to `~/.aws/credentials`:
@@ -112,16 +115,24 @@ Nexus uses your existing AWS credentials — no Anthropic API account needed.
 3. Set **AWS Profile** → `nexus-bedrock`, **Region** → `us-east-1`, **Model ID** → `us.anthropic.claude-sonnet-4-6`
 4. Make sure the model has access enabled in the AWS Bedrock console (Model access → Anthropic)
 
+**OpenRouter** needs an API key from `https://openrouter.ai/keys` and a model chosen in the picker.
+
+**Audio recording** always uses Amazon Transcribe with the AWS profile and region above, whichever provider you choose. To use it, also allow `transcribe:StartStreamTranscription` for that profile and pick a **Transcription language**.
+
 Token usage (daily + monthly) and estimated cost is shown in Settings.
 
-### GitLab (`Settings → GitLab`)
+### Git (`Settings → Git Repo`)
+Choose a provider: GitLab or GitHub.
+
+**GitLab**
 - **URL:** `https://gitlab.com/YourGroup` (group scopes the issue list)
 - **Token:** Personal Access Token with `read_api` scope (add `api` to create issues from tasks)
+- **Project filters:** comma-separated project IDs, blank for all
 - **Default project ID:** numeric project ID for task → issue creation
 
-### Freshservice (`Settings → Freshservice`)
-- **URL:** `https://yourcompany.freshservice.com`
-- **API Key:** Profile → API Settings in Freshservice
+**GitHub**
+- **Token:** classic token with `repo` scope, or a fine-grained token with read access to Issues and Pull requests
+- Shows open issues assigned to you and open pull requests you authored. GitHub is read-only, so issues can't be created from tasks.
 
 ### Watched Folder (`Settings → Watched Folder`)
 - Enable the toggle and set a folder path (Browse button opens a picker)
@@ -135,6 +146,10 @@ Token usage (daily + monthly) and estimated cost is shown in Settings.
 ```bash
 # Frontend only (type-check + bundle, no app window)
 npm run build
+
+# Frontend tests (once, or re-running on changes)
+npm test
+npm run test:watch
 
 # Rust backend only
 cd src-tauri && cargo build
@@ -151,11 +166,24 @@ source ~/.cargo/env && npm run tauri build
 - A new SQLite migration is added to `src-tauri/migrations/`
 - `src-tauri/capabilities/default.json` changes
 
+### Tests
+
+Tests sit next to the code they cover as `src/**/*.test.ts` and cover utilities, services, and stores, with the Tauri and SQLite layers mocked. They run in the `America/New_York` timezone so date mistakes fail on any machine. React components and the Rust backend don't have tests yet.
+
+### CI and security scanning
+
+GitHub Actions workflows live in `.github/workflows/`:
+- `github-ci.yml` — runs `npm test` on pushes to `main` and on pull requests
+- `codeql.yml` — scans TypeScript and Rust with CodeQL on pushes to `main`, on pull requests, and weekly
+
+GitHub secret scanning and push protection are enabled in the repository settings, and results from both appear in the repository's **Security** tab.
+
 ### Database locations
 
 ```
 ~/Library/Application Support/com.wsbeng.nexus/nexus.db          ← SQLite
 ~/Library/Application Support/com.wsbeng.nexus/nexus-settings.json ← Settings + cache
+~/Library/Application Support/com.wsbeng.nexus/recordings/         ← Audio recordings (WAV)
 ```
 
 Migrations run automatically on startup. Current migrations:
@@ -163,6 +191,8 @@ Migrations run automatically on startup. Current migrations:
 - `002_notes.sql` — notes, note_tasks
 - `003_wiki.sql` — wiki_pages, wiki_links, notes.wiki_processed_at
 - `004_notes_extracted.sql` — notes.extracted_at
+- `005_unescape_note_content.sql` — removes markdown escapes the editor added to notes
+- `006_unescape_wiki_brackets.sql` — restores escaped `[[wikilinks]]` in wiki pages
 
 ---
 
@@ -170,8 +200,8 @@ Migrations run automatically on startup. Current migrations:
 
 All data is stored locally. External calls are only made to services you explicitly configure:
 - iCal feed URLs (calendar events)
-- GitLab API at your configured URL
-- Freshservice API at your configured URL
-- AWS Bedrock via your own AWS account and credentials
+- GitLab API at your configured URL, or the GitHub API
+- AWS Bedrock via your own AWS account and credentials, or OpenRouter with your API key
+- Amazon Transcribe via your own AWS account, when you record audio
 
 No analytics, no telemetry, no data leaves your machine except through integrations you set up.
