@@ -103,6 +103,20 @@ Calendars are iCal URL feeds parsed in `src/services/ical.ts` using `ical.js`. E
 
 **Critical date rule:** always compare event dates using **local timezone**. Use `format(new Date(isoString), "yyyy-MM-dd")` — never `.toISOString().slice(0,10)` which gives UTC and causes events to appear on the wrong day in non-UTC timezones.
 
+**Range checks in `ical.ts`:** compare with `toJSDate()`, not `ICAL.Time.compare`, which reads a DATE value (all-day event) as midnight UTC instead of local midnight.
+
+**Rescheduled occurrences:** always pass `exceptions` to `new ICAL.Event`, filtered by UID. Without it, `ical.js` relates every `RECURRENCE-ID` in the feed to every series. A rescheduled occurrence is emitted from its own VEVENT, so the series expansion skips it.
+
+### Tests and CI
+
+Tests use Vitest and sit next to the code as `src/**/*.test.ts`. They cover utilities, services, and stores; React components and the Rust backend have none yet.
+
+- `vitest.config.ts` sets `TZ=America/New_York` so UTC-versus-local mistakes fail on any machine, and `mockReset: true`, so set mock return values in each test or in `beforeEach`.
+- Mock the boundary below the code under test: `@tauri-apps/plugin-sql` and `@tauri-apps/plugin-http` for services, `../services/*` for stores.
+- Mark a confirmed bug you aren't fixing yet with `it.fails("KNOWN BUG: ...")`. It starts failing once the bug is fixed, which is the cue to change it to `it`.
+
+GitHub Actions runs `npm test` (`.github/workflows/github-ci.yml`) and CodeQL for TypeScript and Rust (`.github/workflows/codeql.yml`).
+
 ### Settings — all credentials configurable
 
 `AppSettings` (in `src/types/index.ts`) is the single source of truth for user configuration. No credentials are hardcoded. The `BedrockConfig` shape (`{ profile, region, modelId }`) is passed explicitly to all AI functions.
@@ -135,6 +149,8 @@ In `WikiPageList.tsx`, meetings with `" – Month D, YYYY"` suffix are grouped u
 **Adding a SQLite table:** create `src-tauri/migrations/00N_name.sql`, add `Migration { version: N, ... }` to `lib.rs`, create a service in `src/services/` (see `db.ts` or `notes.ts`), and a Zustand store in `src/stores/`.
 
 **Adding a Tauri plugin:** add to `Cargo.toml` + register in `lib.rs` + add permissions to `capabilities/default.json`. Requires Rust rebuild + restart.
+
+**Clearing a task field:** pass `description` or `dueDate` to `updateTask` with the value `undefined` to clear it. Leave the key out to keep the current value.
 
 **Event dates:** use `format(new Date(e.start), "yyyy-MM-dd")` for local-timezone date comparisons.
 

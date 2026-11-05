@@ -12,7 +12,7 @@ A personal knowledge management desktop app that unifies your calendar, tasks, n
 AI-generated morning briefing with a narrative summary of your day. Stats bar shows meetings, high-priority tasks, and overdue items (tasks + GitLab items + Freshservice tickets). Heads-up alerts for back-to-back meetings, tentative events, and scheduling conflicts. Meeting cards link directly to Teams and let you create meeting notes in one click.
 
 ### Calendar
-Week and month views fed by iCal URLs — Outlook, Google Calendar, Apple Calendar, or any `.ics` feed. Click any event to open a detail popup with attendee info, Teams join link, and meeting notes creation. All-day events pinned in a strip above the time grid. Background pre-fetch keeps navigation instant.
+Week and month views fed by iCal URLs — Outlook, Google Calendar, Apple Calendar, or any `.ics` feed. Click any event to open a detail popup with attendee info, Teams join link, and meeting notes creation. All-day events pinned in a strip above the time grid. Recurring series are expanded with their exclusions and rescheduled occurrences applied. Background pre-fetch keeps navigation instant.
 
 ### Week Ahead
 7-day planning view: full calendar for the week + tasks, GitLab items, and Freshservice tickets due or overdue that week. AI overview generates a week narrative (cached, regenerates each day). Task checkboxes let you close items directly from this view.
@@ -25,7 +25,7 @@ Freshservice tickets assigned to you — open and pending. Status, priority, cat
 
 ### Notes
 Markdown editor with autosave and live preview. Import files via drag-and-drop or browse:
-- **`.eml`** — emails (parses MIME, extracts body, handles base64/quoted-printable)
+- **`.eml`** — emails (parses MIME, extracts body, handles base64/quoted-printable and declared charsets)
 - **`.vtt`** — Teams/Zoom transcripts (strips timestamps, groups by speaker)
 - **`.txt` / `.md`** — plain text
 - **`.docx` / `.doc` / `.rtf` / `.pdf`** — extracted via macOS `textutil`
@@ -65,6 +65,8 @@ Global search ⌘K — notes, tasks, wiki pages, GitLab items, and Freshservice 
 | Freshservice | Freshservice REST API v2 (API key) |
 | File access | tauri-plugin-fs, tauri-plugin-dialog |
 | Notifications | tauri-plugin-notification |
+| Tests | Vitest |
+| CI | GitHub Actions, CodeQL |
 
 ---
 
@@ -136,6 +138,10 @@ Token usage (daily + monthly) and estimated cost is shown in Settings.
 # Frontend only (type-check + bundle, no app window)
 npm run build
 
+# Frontend tests (once, or re-running on changes)
+npm test
+npm run test:watch
+
 # Rust backend only
 cd src-tauri && cargo build
 
@@ -150,6 +156,18 @@ source ~/.cargo/env && npm run tauri build
 - Anything in `src-tauri/` changes (Rust recompiles on file watch but the binary must relaunch)
 - A new SQLite migration is added to `src-tauri/migrations/`
 - `src-tauri/capabilities/default.json` changes
+
+### Tests
+
+Tests sit next to the code they cover as `src/**/*.test.ts` and cover utilities, services, and stores, with the Tauri and SQLite layers mocked. They run in the `America/New_York` timezone so date mistakes fail on any machine. React components and the Rust backend don't have tests yet.
+
+### CI and security scanning
+
+GitHub Actions workflows live in `.github/workflows/`:
+- `github-ci.yml` — runs `npm test` on pushes to `main` and on pull requests
+- `codeql.yml` — scans TypeScript and Rust with CodeQL on pushes to `main`, on pull requests, and weekly
+
+GitHub secret scanning and push protection are enabled in the repository settings, and results from both appear in the repository's **Security** tab.
 
 ### Database locations
 
