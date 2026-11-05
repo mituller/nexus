@@ -124,7 +124,7 @@ describe("notifyOverdueTasks", () => {
   });
 
   it("stays quiet when nothing is overdue", async () => {
-    await notifyOverdueTasks([task("Later", { dueDate: "2026-07-01" })]);
+    await notifyOverdueTasks([task("Later", { dueDate: "2026-07-01" }), task("Today", { dueDate: "2026-06-15" })]);
     expect(sendNotification).not.toHaveBeenCalled();
   });
 

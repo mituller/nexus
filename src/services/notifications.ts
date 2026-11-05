@@ -1,6 +1,7 @@
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { CalendarEvent, Task } from "../types";
-import { format, parseISO, isBefore } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { isOverdue } from "../utils/calendar";
 
 let scheduledTimers: ReturnType<typeof setTimeout>[] = [];
 
@@ -57,9 +58,8 @@ export async function notifyOverdueTasks(tasks: Task[]) {
   const granted = await ensureNotificationPermission();
   if (!granted) return;
 
-  const now = new Date();
   const overdue = tasks.filter(
-    (t) => t.status !== "done" && t.dueDate && isBefore(parseISO(t.dueDate), now)
+    (t) => t.status !== "done" && t.dueDate && isOverdue(t.dueDate)
   );
 
   if (overdue.length === 0) return;

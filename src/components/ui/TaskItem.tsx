@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { CalendarDays } from "lucide-react";
-import { format, parseISO, isBefore } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { isOverdue } from "../../utils/calendar";
 import { Task } from "../../types";
 
 const PRIORITY_BADGE: Record<Task["priority"], string> = {
@@ -16,7 +17,7 @@ interface TaskItemProps {
 }
 
 export const TaskItem = memo(function TaskItem({ task, onComplete, showCheckbox = true }: TaskItemProps) {
-  const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== "done";
+  const overdue = task.dueDate && isOverdue(task.dueDate) && task.status !== "done";
   const isDone = task.status === "done";
 
   return (
@@ -35,7 +36,7 @@ export const TaskItem = memo(function TaskItem({ task, onComplete, showCheckbox 
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium leading-snug
           ${isDone ? "line-through text-gray-400 dark:text-gray-500"
-          : isOverdue ? "text-red-700 dark:text-red-400"
+          : overdue ? "text-red-700 dark:text-red-400"
           : "text-gray-800 dark:text-gray-100"}`}>
           {task.title}
         </p>
@@ -56,9 +57,9 @@ export const TaskItem = memo(function TaskItem({ task, onComplete, showCheckbox 
           {/* Due date */}
           {task.dueDate && (
             <span className={`flex items-center gap-1 text-xs
-              ${isOverdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
+              ${overdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
               <CalendarDays size={11} />
-              {isOverdue ? "Overdue · " : "Due "}
+              {overdue ? "Overdue · " : "Due "}
               {format(parseISO(task.dueDate), "MMM d")}
             </span>
           )}

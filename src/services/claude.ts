@@ -1,6 +1,7 @@
 import { CalendarEvent, Task, DailyBriefing, HeadsUpItem, ExtractedNoteData, TaskPriority, AppSettings, BedrockConfig } from "../types";
 import type { GitIssue } from "../types/git";
-import { format, isBefore, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { isOverdue } from "../utils/calendar";
 import { callClaude } from "./bedrock";
 
 /** Build the AI provider config from app settings. */
@@ -39,7 +40,7 @@ export async function generateDailyBriefing(
 
   const openTasks = tasks.filter((t) => t.status !== "done");
   const overdueTasks = openTasks.filter(
-    (t) => t.dueDate && isBefore(parseISO(t.dueDate), now)
+    (t) => t.dueDate && isOverdue(t.dueDate)
   );
   const highPriorityTasks = openTasks.filter((t) => t.priority === "high");
 
@@ -58,7 +59,7 @@ export async function generateDailyBriefing(
   }
 
   // Overdue git items
-  for (const i of gitIssues.filter(i => i.dueDate && isBefore(parseISO(i.dueDate), now)).slice(0, 3)) {
+  for (const i of gitIssues.filter(i => i.dueDate && isOverdue(i.dueDate)).slice(0, 3)) {
     headsUp.push({
       type: "overdue",
       message: `Overdue Git: "${i.title}" — due ${format(parseISO(i.dueDate!), "MMM d")}.`,
@@ -74,21 +75,25 @@ export async function generateDailyBriefing(
   // Back-to-back detection
   const sorted = [...todayEvents].sort((a, b) => a.start.localeCompare(b.start));
   let streakStart = -1, streakLen = 0;
+  const endStreak = () => {
+    if (streakLen >= 2) {
+      const start = format(parseISO(sorted[streakStart].start), "h:mm a");
+      const end = format(parseISO(sorted[streakStart + streakLen].end), "h:mm a");
+      const names = sorted.slice(streakStart, streakStart + streakLen + 1).map((e) => e.title).join(" → ");
+      headsUp.push({ type: "back_to_back", message: `Back-to-back: ${start}–${end} (${names}) with no gaps.` });
+    }
+    streakLen = 0;
+  };
   for (let i = 0; i < sorted.length - 1; i++) {
     const gapMs = parseISO(sorted[i + 1].start).getTime() - parseISO(sorted[i].end).getTime();
     if (gapMs <= 5 * 60 * 1000) {
       if (streakLen === 0) streakStart = i;
       streakLen++;
     } else {
-      if (streakLen >= 2) {
-        const start = format(parseISO(sorted[streakStart].start), "h:mm a");
-        const end = format(parseISO(sorted[streakStart + streakLen].end), "h:mm a");
-        const names = sorted.slice(streakStart, streakStart + streakLen + 1).map((e) => e.title).join(" → ");
-        headsUp.push({ type: "back_to_back", message: `Back-to-back: ${start}–${end} (${names}) with no gaps.` });
-      }
-      streakLen = 0;
+      endStreak();
     }
   }
+  endStreak(); // a run can last until the day's final meeting
 
   const tomorrowTentative = tomorrowEvents.filter((e) => e.isTentative);
   for (const e of tomorrowTentative.slice(0, 2)) {
@@ -217,13 +222,10 @@ function formatVttTimestamp(vttTime: string, isAbsoluteUtc: boolean): string {
   const h = parseInt(m[1]), min = parseInt(m[2]);
 
   if (isAbsoluteUtc) {
-    // Convert absolute UTC time to CST (America/Chicago)
+    // Convert absolute UTC time to the user's timezone
     const d = new Date();
     d.setUTCHours(h, min, 0, 0);
-    return d.toLocaleTimeString("en-US", {
-      hour: "numeric", minute: "2-digit", hour12: true,
-      timeZone: "America/Chicago",
-    });
+    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   }
   // Relative elapsed time — show as H:MM or M:SS
   if (h > 0) return `${h}:${String(min).padStart(2, "0")}`;
@@ -286,10 +288,9 @@ export function cleanTranscriptText(raw: string): string {
       .replace(/^WEBVTT.*$/gm, "")
       .replace(/^\d{2}:\d{2}[\d:.,\s-->]+$/gm, "")
       .replace(/^NOTE\b.*$/gm, "")
-      .replace(UUID_CUE_RE.source, "")
       .replace(/^\d+$/gm, "")
       .replace(/<[^>]+>/g, "")
-      .split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
+      .split("\n").map((l) => l.trim()).filter((l) => l && !UUID_CUE_RE.test(l)).join("\n");
   }
 
   // Merge consecutive same-speaker lines; keep the first timestamp of each group

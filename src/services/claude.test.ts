@@ -94,12 +94,14 @@ describe("generateDailyBriefing", () => {
     expect(result.narrative).toBe("Narrative");
   });
 
-  // A date-only due date parses as local midnight, so it's "before now" for
-  // the whole of the day it's due. The same check is in TaskList, TaskItem,
-  // GitItemRow, notifications and isOverdue.
-  it.fails("KNOWN BUG: a task due today isn't overdue yet", async () => {
+  it("a task due today isn't overdue yet", async () => {
     const result = await briefing([], [], [task("today", { dueDate: "2026-06-15" })]);
     expect(result.stats.overdueTasks).toBe(0);
+  });
+
+  it("doesn't alert on a git issue due today", async () => {
+    const { headsUp } = await briefing([], [], [], [issue("today", "2026-06-15")]);
+    expect(headsUp).toEqual([]);
   });
 
   it("links an overdue task's alert to the task", async () => {
@@ -151,11 +153,19 @@ describe("generateDailyBriefing", () => {
       expect(headsUp.filter((h) => h.type === "back_to_back")).toEqual([]);
     });
 
-    // The streak is only reported when a later gap ends it, and the loop ends
-    // without checking for one still running.
-    it.fails("KNOWN BUG: reports a run of meetings that lasts until the end of the day", async () => {
+    it("reports a run of meetings that lasts until the end of the day", async () => {
       const { headsUp } = await briefing([event("A", 13, 14), event("B", 14, 15), event("C", 15, 16)]);
-      expect(headsUp.some((h) => h.type === "back_to_back")).toBe(true);
+      expect(headsUp.filter((h) => h.type === "back_to_back").map((h) => h.message)).toEqual([
+        "Back-to-back: 1:00 PM–4:00 PM (A → B → C) with no gaps.",
+      ]);
+    });
+
+    it("reports each separate run", async () => {
+      const { headsUp } = await briefing([
+        event("A", 8, 9), event("B", 9, 10), event("C", 10, 11),
+        event("D", 13, 14), event("E", 14, 15), event("F", 15, 16),
+      ]);
+      expect(headsUp.filter((h) => h.type === "back_to_back")).toHaveLength(2);
     });
   });
 
@@ -308,9 +318,7 @@ ba33dcbe-cd01-4481-8eb6-cb579022ce22/130-1
     expect(cleanTranscriptText("WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000")).toBe("");
   });
 
-  // The fallback passes UUID_CUE_RE.source to replace(), which treats it as
-  // literal text instead of a pattern.
-  it.fails("KNOWN BUG: removes UUID cue ids when a transcript has no speech", () => {
+  it("removes UUID cue ids when a transcript has no speech", () => {
     const vtt = "WEBVTT\n\nba33dcbe-cd01-4481-8eb6-cb579022ce22/130-1\n00:00:01.000 --> 00:00:02.000";
     expect(cleanTranscriptText(vtt)).toBe("");
   });
@@ -320,9 +328,8 @@ ba33dcbe-cd01-4481-8eb6-cb579022ce22/130-1
       vi.useRealTimers();
     });
 
-    // formatVttTimestamp always converts to America/Chicago. Tests run in New
-    // York, where 15:30 UTC in June is 11:30 AM, not Chicago's 10:30 AM.
-    it.fails("KNOWN BUG: shows them in the user's timezone", () => {
+    // Tests run in New York, where 15:30 UTC in June is 11:30 AM.
+    it("shows them in the user's timezone", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-06-15T16:00:00Z"));
       expect(cleanTranscriptText("15:30:00.000 --> 15:30:02.000\n<v Ann>Hi")).toBe("**Ann** (11:30 AM): Hi");

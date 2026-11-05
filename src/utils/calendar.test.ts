@@ -79,12 +79,16 @@ describe("isOverdue", () => {
     expect(isOverdue("2026-06-15T12:01:00Z")).toBe(false);
   });
 
-  // A date with no time parses as local midnight, so it's "past" all day. See
-  // also generateDailyBriefing in claude.test.ts.
-  it.fails("KNOWN BUG: a date-only value isn't overdue on that day", () => {
+  it("a date-only value isn't overdue on that day", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 5, 15, 12));
     expect(isOverdue("2026-06-15")).toBe(false);
+  });
+
+  it("makes a date-only value overdue once that day ends", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 16, 0, 0, 1));
+    expect(isOverdue("2026-06-15")).toBe(true);
   });
 });
 

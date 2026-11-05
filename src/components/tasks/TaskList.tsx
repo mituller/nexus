@@ -1,12 +1,13 @@
 import { useState, useMemo, memo, useRef, useEffect } from "react";
 import { Plus, Trash2, CheckCircle2, ExternalLink, GitBranch, Send, Pencil, CalendarDays, ChevronDown, X as XIcon, FileText, Search, RefreshCw, AlertCircle } from "lucide-react";
-import { format, parseISO, isBefore } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useTaskStore } from "../../stores/tasks";
 import { useGitStore, GIT_PROVIDER_LABEL, gitErrorMessage } from "../../stores/git";
 import { useSettingsStore } from "../../stores/settings";
 import { Task } from "../../types";
 import { GitIssue, GitMR } from "../../types/git";
 import { createGitLabIssue } from "../../services/gitlabWrite";
+import { isOverdue } from "../../utils/calendar";
 import { isGitTask, issueToTask } from "../../utils/gitTasks";
 import { isPriorityLabel } from "../../utils/priority";
 import { TaskForm } from "./TaskForm";
@@ -261,7 +262,7 @@ interface TaskRowProps {
 }
 
 const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, onOpenNote, highlight }: TaskRowProps) {
-  const isOverdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== "done";
+  const overdue = task.dueDate && isOverdue(task.dueDate) && task.status !== "done";
   const isDone = task.status === "done";
   const { settings } = useSettingsStore();
   const [creating, setCreating] = useState(false);
@@ -303,7 +304,7 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
         title={isDone ? "Mark as open" : "Mark as done"}
       />
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${isDone ? "line-through text-gray-400 dark:text-gray-500" : isOverdue ? "text-red-700" : "text-gray-800 dark:text-gray-100"}`}>
+        <p className={`text-sm font-medium ${isDone ? "line-through text-gray-400 dark:text-gray-500" : overdue ? "text-red-700" : "text-gray-800 dark:text-gray-100"}`}>
           {task.title}
         </p>
         {task.description && (
@@ -316,10 +317,10 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
           {task.tags.map((tag) => (
             <span key={tag} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-500 rounded text-xs">{tag}</span>
           ))}
-          <span className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-500 font-medium" : task.dueDate ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
+          <span className={`flex items-center gap-1 text-xs ${overdue ? "text-red-500 font-medium" : task.dueDate ? "text-gray-500 dark:text-gray-400" : "text-gray-300 dark:text-gray-600"}`}>
             <CalendarDays size={11} />
             {task.dueDate
-              ? <>Due {format(parseISO(task.dueDate), "MMM d")}{isOverdue && " · overdue"}</>
+              ? <>Due {format(parseISO(task.dueDate), "MMM d")}{overdue && " · overdue"}</>
               : "No due date"}
           </span>
         </div>
@@ -383,7 +384,7 @@ interface GitIssueRowProps {
 }
 
 const GitIssueRow = memo(function GitIssueRow({ issue, isLinked, onOpen, onClose, onAddTask }: GitIssueRowProps) {
-  const isOverdue = issue.dueDate && isBefore(parseISO(issue.dueDate), new Date());
+  const overdue = issue.dueDate && isOverdue(issue.dueDate);
   const [confirmingClose, setConfirmingClose] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -442,9 +443,9 @@ const GitIssueRow = memo(function GitIssueRow({ issue, isLinked, onOpen, onClose
               <span key={label} className="px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded text-xs">{label}</span>
             ))}
           {issue.dueDate && (
-            <span className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
+            <span className={`text-xs ${overdue ? "text-red-500 font-medium" : "text-gray-400 dark:text-gray-500"}`}>
               Due {format(parseISO(issue.dueDate), "MMM d")}
-              {isOverdue && " · overdue"}
+              {overdue && " · overdue"}
             </span>
           )}
         </div>

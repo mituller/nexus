@@ -103,7 +103,8 @@ function mapIssue(item: Record<string, unknown>): GitIssue | null {
     projectPath: path,
     labels,
     milestone: milestone?.title as string | undefined,
-    dueDate: milestone?.due_on as string | undefined,
+    // due_on is the milestone's calendar date at 07:00 or 08:00 UTC, so keep just the date.
+    dueDate: (milestone?.due_on as string | null | undefined)?.slice(0, 10),
     priority: extractPriorityFromLabels(labels),
     issueType: "issue",
     createdAt: String(item.created_at ?? ""),
