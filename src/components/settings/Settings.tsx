@@ -142,6 +142,7 @@ export function Settings() {
             <p className="text-xs text-gray-400 dark:text-gray-500">
               Classic token with <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">repo</code> scope, or a fine-grained token with
               read access to <strong>Issues</strong> and <strong>Pull requests</strong>. Shown: open issues assigned to you and open PRs you authored.
+              To close issues from Nexus, a fine-grained token needs write access to <strong>Issues</strong>.
             </p>
           </>
         ) : (

@@ -7,6 +7,8 @@ import { useSettingsStore } from "../../stores/settings";
 import { Task } from "../../types";
 import { GitIssue, GitMR } from "../../types/git";
 import { createGitLabIssue } from "../../services/gitlabWrite";
+import { isGitTask, issueToTask } from "../../utils/gitTasks";
+import { isPriorityLabel } from "../../utils/priority";
 import { TaskForm } from "./TaskForm";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 
@@ -34,8 +36,8 @@ interface TaskListProps {
 }
 
 export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListProps = {}) {
-  const { tasks, complete, remove, update } = useTaskStore();
-  const { issues, mrs, connected: gitConnected, openIssue, provider } = useGitStore();
+  const { tasks, add, complete, remove, update } = useTaskStore();
+  const { issues, mrs, connected: gitConnected, openIssue, closeIssue, provider } = useGitStore();
   const gitLabel = GIT_PROVIDER_LABEL[provider];
   const [showForm, setShowForm] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -45,6 +47,7 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const linkedIssueUrls = useMemo(() => new Set(tasks.filter(isGitTask).map((t) => t.sourceId)), [tasks]);
 
   // Debounce the text search by 200ms
   useEffect(() => {
@@ -151,6 +154,7 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
             <option value="calendar">Calendar</option>
             <option value="transcript">Transcript / Email</option>
             <option value="gitlab">GitLab</option>
+            <option value="github">GitHub</option>
           </select>
           {allTags.length > 0 && (
             <TagCombobox tags={allTags} value={filterTag} onChange={setFilterTag} />
@@ -190,7 +194,14 @@ export function TaskList({ onOpenNote, focusTaskId, onFocusHandled }: TaskListPr
           </h2>
           <div className="space-y-1">
             {issues.map((issue) => (
-              <GitIssueRow key={issue.id} issue={issue} onOpen={openIssue} />
+              <GitIssueRow
+                key={issue.id}
+                issue={issue}
+                isLinked={linkedIssueUrls.has(issue.webUrl)}
+                onOpen={openIssue}
+                onClose={closeIssue}
+                onAddTask={add}
+              />
             ))}
           </div>
         </div>
@@ -290,7 +301,15 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
         </div>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        {task.sourceId && onOpenNote && (
+        {isGitTask(task) ? (
+          <button
+            onClick={() => openUrl(task.sourceId!)}
+            title="Open source issue"
+            className="text-gray-300 hover:text-purple-500 transition-colors"
+          >
+            <ExternalLink size={13} />
+          </button>
+        ) : task.sourceId && onOpenNote && (
           <button
             onClick={() => onOpenNote(task.sourceId!)}
             title="Open source note"
@@ -333,21 +352,50 @@ const TaskRow = memo(function TaskRow({ task, onComplete, onDelete, onUpdate, on
 
 interface GitIssueRowProps {
   issue: GitIssue;
+  isLinked: boolean;
   onOpen: (url: string) => void;
+  onClose: (issue: GitIssue) => Promise<void>;
+  onAddTask: (task: ReturnType<typeof issueToTask>) => Promise<Task>;
 }
 
-const GitIssueRow = memo(function GitIssueRow({ issue, onOpen }: GitIssueRowProps) {
+const GitIssueRow = memo(function GitIssueRow({ issue, isLinked, onOpen, onClose, onAddTask }: GitIssueRowProps) {
   const isOverdue = issue.dueDate && isBefore(parseISO(issue.dueDate), new Date());
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run(action: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+    } catch (e) {
+      setError(/GitHub (403|404)/.test(String(e))
+        ? "GitHub refused this. Your token may need write access to Issues (see Settings)."
+        : String(e));
+    } finally {
+      setBusy(false);
+      setConfirmingClose(false);
+    }
+  }
 
   return (
-    <button
-      onClick={() => onOpen(issue.webUrl)}
-      className="group w-full flex items-start gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 transition-colors text-left"
-    >
-      {/* GitLab diamond icon instead of checkbox */}
-      <GitBranch size={16} className="mt-0.5 shrink-0 text-orange-400" />
+    <div className="group w-full flex items-start gap-3 px-4 py-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 transition-colors text-left">
+      {issue.provider === "github" ? (
+        <input
+          type="checkbox"
+          checked={confirmingClose}
+          disabled={busy}
+          onChange={(e) => { setConfirmingClose(e.target.checked); setError(null); }}
+          className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
+          title="Close this issue on GitHub"
+        />
+      ) : (
+        <GitBranch size={16} className="mt-0.5 shrink-0 text-orange-400" />
+      )}
 
       <div className="flex-1 min-w-0">
+        <button onClick={() => onOpen(issue.webUrl)} className="block w-full text-left">
         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{issue.title}</p>
         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
           <span className="text-xs text-gray-400 dark:text-gray-500">{issue.projectName} #{issue.iid}</span>
@@ -364,7 +412,7 @@ const GitIssueRow = memo(function GitIssueRow({ issue, onOpen }: GitIssueRowProp
             <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-500 rounded text-xs">{issue.milestone}</span>
           )}
           {issue.labels
-            .filter((l) => !l.toLowerCase().match(/critical|high|medium|low/))
+            .filter((l) => !isPriorityLabel(l))
             .slice(0, 3)
             .map((label) => (
               <span key={label} className="px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded text-xs">{label}</span>
@@ -376,10 +424,51 @@ const GitIssueRow = memo(function GitIssueRow({ issue, onOpen }: GitIssueRowProp
             </span>
           )}
         </div>
+        </button>
+
+        {confirmingClose && (
+          <div className="flex items-center gap-2 mt-2 text-xs text-gray-600 dark:text-gray-400">
+            <span>Close this issue on GitHub?</span>
+            <button
+              onClick={() => run(() => onClose(issue))}
+              disabled={busy}
+              className="px-2 py-0.5 rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+            >
+              {busy ? "Closing…" : "Close issue"}
+            </button>
+            <button
+              onClick={() => setConfirmingClose(false)}
+              disabled={busy}
+              className="underline hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
       </div>
 
-      <ExternalLink size={13} className="shrink-0 text-gray-300 group-hover:text-gray-500 dark:text-gray-500 mt-0.5 transition-colors" />
-    </button>
+      <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+        {isLinked ? (
+          <span title="Already added as a task">
+            <CheckCircle2 size={13} className="text-green-500" />
+          </span>
+        ) : (
+          <button
+            onClick={() => run(() => onAddTask(issueToTask(issue)))}
+            disabled={busy}
+            title="Add as task"
+            aria-label="Add as task"
+            className="text-gray-300 hover:text-purple-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+          >
+            <Plus size={13} />
+          </button>
+        )}
+        <button onClick={() => onOpen(issue.webUrl)} title="Open in browser" aria-label="Open in browser">
+          <ExternalLink size={13} className="text-gray-300 group-hover:text-gray-500 dark:text-gray-500 transition-colors" />
+        </button>
+      </div>
+    </div>
   );
 });
 

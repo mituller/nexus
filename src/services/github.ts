@@ -3,9 +3,10 @@ import { GitIssue, GitMR, GitUser } from "../types/git";
 import { extractPriorityFromLabels } from "../utils/priority";
 
 /**
- * GitHub REST API client — read-only mirror of the GitLab integration.
+ * GitHub REST API client — mirror of the GitLab integration.
  * Feeds the same GitIssue/GitMR shapes: issues assigned to you, plus open
- * pull requests you authored (equivalent of "my merge requests").
+ * pull requests you authored (equivalent of "my merge requests"). The only
+ * write is closing an issue.
  */
 
 const API = "https://api.github.com";
@@ -24,6 +25,24 @@ async function ghGet<T>(token: string, path: string): Promise<T> {
     throw new Error(`GitHub ${res.status}: ${body.slice(0, 200)}`);
   }
   return res.json() as Promise<T>;
+}
+
+/** Close an issue as completed. Needs a token with write access to issues. */
+export async function closeIssue(token: string, repoPath: string, number: number): Promise<void> {
+  const res = await fetch(`${API}/repos/${repoPath}/issues/${number}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    },
+    body: JSON.stringify({ state: "closed", state_reason: "completed" }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`GitHub ${res.status}: ${body.slice(0, 200)}`);
+  }
 }
 
 export async function getGitHubUser(token: string): Promise<GitUser> {

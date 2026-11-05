@@ -18,7 +18,7 @@ Week and month views fed by iCal URLs — Outlook, Google Calendar, Apple Calend
 7-day planning view: full calendar for the week + tasks and GitLab or GitHub items due or overdue that week. AI overview generates a week narrative (cached, regenerates each day). Task checkboxes let you close items directly from this view.
 
 ### Tasks
-Full task manager sorted by priority. Filter by priority, source, or tag (searchable combobox). Done tasks stay in place with strikethrough — delete when ready. Tasks created from notes have a link back to the source note. GitLab or GitHub issues and merge/pull requests displayed below personal tasks. With GitLab, create an issue from any task. Task count badge in sidebar.
+Full task manager sorted by priority. Filter by priority, source, or tag (searchable combobox). Done tasks stay in place with strikethrough — delete when ready. Tasks created from notes have a link back to the source note. GitLab or GitHub issues and merge/pull requests displayed below personal tasks. Add any issue as a linked task, close GitHub issues from their checkbox, and with GitLab, create an issue from any task. Task count badge in sidebar.
 
 ### Notes
 Markdown editor with autosave and live preview. Import files via drag-and-drop or browse:
@@ -131,8 +131,8 @@ Choose a provider: GitLab or GitHub.
 - **Default project ID:** numeric project ID for task → issue creation
 
 **GitHub**
-- **Token:** classic token with `repo` scope, or a fine-grained token with read access to Issues and Pull requests
-- Shows open issues assigned to you and open pull requests you authored. GitHub is read-only, so issues can't be created from tasks.
+- **Token:** classic token with `repo` scope, or a fine-grained token with read access to Issues and Pull requests. To close issues from Nexus, a fine-grained token needs write access to Issues.
+- Shows open issues assigned to you and open pull requests you authored. Issues can't be created from tasks with GitHub.
 
 ### Watched Folder (`Settings → Watched Folder`)
 - Enable the toggle and set a folder path (Browse button opens a picker)
