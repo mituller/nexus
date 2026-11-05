@@ -1,5 +1,5 @@
 import { GitBranch, AlertCircle } from "lucide-react";
-import { useGitStore, GIT_PROVIDER_LABEL } from "../../stores/git";
+import { useGitStore, GIT_PROVIDER_LABEL, gitErrorMessage } from "../../stores/git";
 import { GitItemRow } from "../git/GitItemRow";
 
 export function GitSection() {
@@ -21,7 +21,7 @@ export function GitSection() {
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
           <AlertCircle size={14} />
-          {error.includes("401") ? `Invalid ${label} token — check Settings.` : `${label} error: ${error}`}
+          {gitErrorMessage(error, provider)}
         </div>
       )}
 

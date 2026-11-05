@@ -9,6 +9,30 @@ export const GIT_PROVIDER_LABEL: Record<GitProvider, string> = {
   github: "GitHub",
 };
 
+/** A failed fetch as a message to show the user. */
+export function gitErrorMessage(error: string, provider: GitProvider): string {
+  const label = GIT_PROVIDER_LABEL[provider];
+  if (error.includes(" 401")) return `Invalid ${label} token — check Settings.`;
+  if (error.includes(" 403") || error.includes(" 404")) {
+    return `${label} refused access — check the token's repository access and permissions in Settings.`;
+  }
+  return `${label} error: ${error}`;
+}
+
+/**
+ * Settle both lists together. Issues are required, but a token without pull
+ * request access shouldn't hide them, so a failed MR/PR list only sets `error`.
+ */
+async function loadItems(issues: Promise<GitIssue[]>, mrs: Promise<GitMR[]>) {
+  const [issuesResult, mrsResult] = await Promise.allSettled([issues, mrs]);
+  if (issuesResult.status === "rejected") throw issuesResult.reason;
+  return {
+    issues: issuesResult.value,
+    mrs: mrsResult.status === "fulfilled" ? mrsResult.value : [],
+    error: mrsResult.status === "rejected" ? String(mrsResult.reason) : null,
+  };
+}
+
 interface GitStore {
   /** Which provider the current data came from (settings at last fetch). */
   provider: GitProvider;
@@ -43,22 +67,20 @@ export const useGitStore = create<GitStore>((set) => ({
     try {
       if (isGitHub) {
         const user = await getGitHubUser(token);
-        const [issues, mrs] = await Promise.all([
-          getGitHubIssues(token),
-          getOpenPullRequests(token),
-        ]);
-        set({ provider: "github", user, issues, mrs, connected: true, loading: false });
+        const items = await loadItems(getGitHubIssues(token), getOpenPullRequests(token));
+        set({ provider: "github", user, ...items, connected: true, loading: false });
       } else {
         // Fetch user first so we have their ID for reliable assignee filtering
         const user = await getGitLabUser(settings.gitlabUrl, settings.gitlabToken);
-        const [issues, mrs] = await Promise.all([
+        const items = await loadItems(
           getGitLabIssues(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters, user.id ?? undefined),
           getOpenMergeRequests(settings.gitlabUrl, settings.gitlabToken, settings.gitlabProjectFilters),
-        ]);
-        set({ provider: "gitlab", user, issues, mrs, connected: true, loading: false });
+        );
+        set({ provider: "gitlab", user, ...items, connected: true, loading: false });
       }
     } catch (e) {
-      set({ error: String(e), connected: false, loading: false });
+      // Record the provider too, so the error isn't blamed on the previous one
+      set({ provider: isGitHub ? "github" : "gitlab", error: String(e), connected: false, loading: false });
     }
   },
 
