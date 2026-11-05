@@ -11,14 +11,22 @@ A personal knowledge management desktop app that unifies your calendar, tasks, n
 ### Dashboard
 AI-generated morning briefing with a narrative summary of your day. Stats bar shows meetings, high-priority tasks, and overdue items (tasks + GitLab or GitHub items). Heads-up alerts for back-to-back meetings, tentative events, and scheduling conflicts. Meeting cards link directly to Teams and let you create meeting notes in one click.
 
+![Dashboard](docs/images/dashboard.png)
+
 ### Calendar
 Week and month views fed by iCal URLs — Outlook, Google Calendar, Apple Calendar, or any `.ics` feed. Click any event to open a detail popup with attendee info, Teams join link, and meeting notes creation. All-day events pinned in a strip above the time grid. Recurring series are expanded with their exclusions and rescheduled occurrences applied. Background pre-fetch keeps navigation instant.
+
+![Calendar week view](docs/images/calendar.png)
 
 ### Week Ahead
 7-day planning view: full calendar for the week + tasks and GitLab or GitHub items due or overdue that week. AI overview generates a week narrative (cached, regenerates each day). Task checkboxes let you close items directly from this view.
 
+![Week Ahead](docs/images/week-ahead.png)
+
 ### Tasks
 Full task manager sorted by priority. Filter by priority, source, or tag (searchable combobox). Done tasks stay in place with strikethrough — delete when ready. Tasks created from notes have a link back to the source note. GitLab or GitHub issues and merge/pull requests displayed below personal tasks. Add any issue as a linked task, close GitHub issues from their checkbox, and with GitLab, create an issue from any task. Task count badge in sidebar.
+
+![Tasks](docs/images/tasks.png)
 
 ### Notes
 Markdown editor with autosave and live preview. Import files via drag-and-drop or browse:
@@ -33,12 +41,16 @@ AI extraction pulls out action items with fuzzy deduplication against existing t
 
 **Watched folder** — configure a folder path in Settings; Nexus scans it every 30 seconds and auto-imports any supported files. Processed files move to `_processed/` subfolder. Badge in sidebar shows new imports.
 
+![Notes](docs/images/notes.png)
+
 ### Wiki
 Karpathy-style compiled knowledge base. AI ingests notes and builds wiki pages per entity type:
 - **Recurring meetings** (daily standup, etc.) → dated occurrence page + rolling summary parent page, grouped in folder view
 - **People, projects, concepts, decisions** → merge behavior, accumulating knowledge over time
 
 Natural language query, lint check for orphaned pages and broken cross-links, force-directed graph view. Clicking a graph node opens that page. Deleting a wiki page resets the source notes so they re-queue for ingest. Editing note content automatically re-queues it.
+
+![Wiki with graph view](docs/images/wiki.png)
 
 ### Search
 Global search ⌘K — notes, tasks, wiki pages, and GitLab or GitHub issues. Issue results open in the browser.
