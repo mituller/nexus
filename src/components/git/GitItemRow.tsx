@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { ExternalLink, GitBranch } from "lucide-react";
 import { GitIssue } from "../../types/git";
-import { GIT_PRIORITY_COLORS } from "../../utils/priority";
+import { GIT_PRIORITY_COLORS, isPriorityLabel } from "../../utils/priority";
 import { isOverdue, formatShortDate } from "../../utils/calendar";
 import { openExternalUrl } from "../../utils/calendar";
 
@@ -37,7 +37,7 @@ export const GitItemRow = memo(function GitItemRow({ issue, compact = false }: G
           )}
           {issue.iteration && <span className="text-xs text-purple-500">⟳ {issue.iteration}</span>}
           {issue.milestone && <span className="text-xs text-gray-400 dark:text-gray-500">· {issue.milestone}</span>}
-          {issue.labels.filter(l => !l.toLowerCase().match(/critical|high|medium|low/)).slice(0, 2).map(label => (
+          {issue.labels.filter((l) => !isPriorityLabel(l)).slice(0, 2).map(label => (
             <span key={label} className="px-1.5 py-0.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded text-xs">{label}</span>
           ))}
           {issue.dueDate && (

@@ -121,7 +121,9 @@ GitHub Actions runs `npm test` (`.github/workflows/github-ci.yml`) and CodeQL fo
 
 ### Git — GitLab or GitHub
 
-`settings.gitProvider` selects the backend. `src/services/gitlab.ts` and `src/services/github.ts` both map into the provider-agnostic types in `src/types/git.ts`, so the rest of the app doesn't care which is active. GitHub is read-only; creating an issue from a task (`src/services/gitlabWrite.ts`) only works with GitLab.
+`settings.gitProvider` selects the backend. `src/services/gitlab.ts` and `src/services/github.ts` both map into the provider-agnostic types in `src/types/git.ts`, so the rest of the app doesn't care which is active. Creating an issue from a task (`src/services/gitlabWrite.ts`) only works with GitLab; closing an issue (`closeIssue` in `git.ts`) only works with GitHub.
+
+`issueToTask` (`src/utils/gitTasks.ts`) copies an issue into a task with `sourceType` set to the provider. For those tasks `sourceId` is the issue's URL, not a note id, so check `isGitTask(task)` before treating `sourceId` as a note. Linked tasks and issues don't sync.
 
 ### Settings — all credentials configurable
 

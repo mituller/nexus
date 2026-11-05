@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { GitIssue, GitMR, GitUser, GitProvider } from "../types/git";
 import { getAssignedIssues as getGitLabIssues, getOpenMergeRequests, getGitLabUser } from "../services/gitlab";
-import { getGitHubUser, getAssignedIssues as getGitHubIssues, getOpenPullRequests } from "../services/github";
+import { closeIssue as closeGitHubIssue, getGitHubUser, getAssignedIssues as getGitHubIssues, getOpenPullRequests } from "../services/github";
 import { useSettingsStore } from "./settings";
 
 export const GIT_PROVIDER_LABEL: Record<GitProvider, string> = {
@@ -19,6 +19,8 @@ interface GitStore {
   connected: boolean;
   error: string | null;
   fetch: () => Promise<void>;
+  /** Close an issue on GitHub, then drop it from the list. Rejects if GitHub refuses. */
+  closeIssue: (issue: GitIssue) => Promise<void>;
   openIssue: (url: string) => void;
 }
 
@@ -58,6 +60,13 @@ export const useGitStore = create<GitStore>((set) => ({
     } catch (e) {
       set({ error: String(e), connected: false, loading: false });
     }
+  },
+
+  closeIssue: async (issue) => {
+    if (issue.provider !== "github") throw new Error("Closing issues is only supported on GitHub");
+    const { settings } = useSettingsStore.getState();
+    await closeGitHubIssue(settings.githubToken, issue.projectPath, issue.iid);
+    set((state) => ({ issues: state.issues.filter((i) => i.id !== issue.id) }));
   },
 
   openIssue: (url) => {

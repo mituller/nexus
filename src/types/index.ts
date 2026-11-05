@@ -10,7 +10,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: string;
-  sourceType?: "manual" | "calendar" | "transcript" | "gitlab";
+  sourceType?: "manual" | "calendar" | "transcript" | "gitlab" | "github";
   sourceId?: string;
   tags: string[];
   createdAt: string;
