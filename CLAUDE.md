@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Nexus is a personal knowledge management desktop app built with **Tauri v2** (Rust backend) + **React 19 / TypeScript** frontend. It combines an AI-powered daily briefing, task manager, calendar view, notes, wiki, GitLab, and Freshservice integrations into a single native macOS app.
+Nexus is a personal knowledge management desktop app built with **Tauri v2** (Rust backend) + **React 19 / TypeScript** frontend. It combines an AI-powered daily briefing, task manager, calendar view, notes, wiki, and GitLab or GitHub integrations into a single native macOS app.
 
 ## Commands
 
@@ -60,19 +60,21 @@ SQLite migrations run automatically at startup via `tauri-plugin-sql`. Add new m
 | `notes.ts` | Notes |
 | `wiki.ts` | Wiki pages + expanded category state |
 | `weekly.ts` | Weekly AI narrative (cached per day) |
-| `gitlab.ts` | GitLab issues + MRs |
-| `freshservice.ts` | Freshservice tickets |
+| `git.ts` | Issues + MRs/PRs from the selected provider (GitLab or GitHub) |
 | `folderWatcher.ts` | Watched folder polling + import badge |
 
 Pattern: `load()` fetches from SQLite on startup; mutations write to SQLite then update in-memory state immediately. Stores call each other via `useXStore.getState()` (not hooks) to avoid re-render loops.
 
-`App.tsx` orchestrates startup: load settings → load tasks/notes/wiki → start folder watcher → fetch calendar/GitLab/Freshservice → generate briefings.
+`App.tsx` orchestrates startup: load settings → load tasks/notes/wiki → start folder watcher → fetch calendar and git items → generate briefings.
 
-### AI — AWS Bedrock via Rust command
+### AI — AWS Bedrock or OpenRouter
 
-All AI calls go through the `invoke_bedrock` Tauri command in `src-tauri/src/lib.rs`. It loads AWS credentials from `~/.aws/credentials` using the configured profile and calls `bedrock:InvokeModel`. **Never call any AI API directly from the frontend.**
+All AI calls go through `src/services/bedrock.ts` → `callClaude(cfg, messages, maxTokens)`, which picks the provider from `cfg.provider`. **Never call an AI API from anywhere else.**
 
-The shared entry point is `src/services/bedrock.ts` → `callClaude(cfg, messages, maxTokens)`. Both `src/services/claude.ts` (briefing, note extraction) and `src/services/wikiAI.ts` (wiki ingest/query/lint) import from it.
+- **Bedrock** uses the `invoke_bedrock` Tauri command in `src-tauri/src/lib.rs`. It loads AWS credentials from `~/.aws/credentials` using the configured profile and calls `bedrock:InvokeModel`.
+- **OpenRouter** uses its OpenAI-compatible API through `plugin-http`, with the API key from Settings. `src/services/openRouter.ts` fetches and caches the model catalog for the Settings picker.
+
+Both `src/services/claude.ts` (briefing, note extraction) and `src/services/wikiAI.ts` (wiki ingest/query/lint) import from it.
 
 Token usage is tracked automatically in `src/services/tokenUsage.ts` — every `callClaude` call fires-and-forgets an accumulator.
 
@@ -95,7 +97,7 @@ If the mic stops working after a rebuild, reset the TCC grant: `tccutil reset Mi
 
 ### External HTTP — plugin-http only
 
-Use `fetch` from `"@tauri-apps/plugin-http"` for ALL external HTTP (iCal feeds, GitLab API, Freshservice API). Never use `window.fetch` — it has CORS restrictions in the WebView. Capability `https://**` is open.
+Use `fetch` from `"@tauri-apps/plugin-http"` for ALL external HTTP (iCal feeds, GitLab API, GitHub API, OpenRouter). Never use `window.fetch` — it has CORS restrictions in the WebView. Capability `https://**` is open.
 
 ### Calendar — iCal feeds only
 
@@ -117,20 +119,23 @@ Tests use Vitest and sit next to the code as `src/**/*.test.ts`. They cover util
 
 GitHub Actions runs `npm test` (`.github/workflows/github-ci.yml`) and CodeQL for TypeScript and Rust (`.github/workflows/codeql.yml`).
 
+### Git — GitLab or GitHub
+
+`settings.gitProvider` selects the backend. `src/services/gitlab.ts` and `src/services/github.ts` both map into the provider-agnostic types in `src/types/git.ts`, so the rest of the app doesn't care which is active. GitHub is read-only; creating an issue from a task (`src/services/gitlabWrite.ts`) only works with GitLab.
+
 ### Settings — all credentials configurable
 
-`AppSettings` (in `src/types/index.ts`) is the single source of truth for user configuration. No credentials are hardcoded. The `BedrockConfig` shape (`{ profile, region, modelId }`) is passed explicitly to all AI functions.
+`AppSettings` (in `src/types/index.ts`) is the single source of truth for user configuration. No credentials are hardcoded. The `BedrockConfig` shape (`{ provider, profile, region, modelId, openRouterApiKey, openRouterModel }`) is passed explicitly to all AI functions.
 
 ### Shared utilities (`src/utils/`)
 
 - `calendar.ts` — `isAllDay()`, `isOverdue()`, `formatShortDate()`, `openExternalUrl()` — used across multiple components
-- `priority.ts` — `GITLAB_PRIORITY_COLORS`, `FRESHSERVICE_PRIORITY_COLORS` — single source of priority badge styles
+- `priority.ts` — `GIT_PRIORITY_COLORS`, `extractPriorityFromLabels()` — priority badge styles and label parsing shared by the GitLab and GitHub backends
 
 ### Shared row components
 
-- `src/components/gitlab/GitLabItemRow.tsx` — reusable GitLab issue row (Dashboard, Week Ahead, TaskList)
-- `src/components/tickets/FreshserviceTicketRow.tsx` — reusable ticket row (Dashboard, Week Ahead, TicketsView)
-- `src/components/ui/TaskItem.tsx` — shared task row with priority badge (Dashboard, Week Ahead, TaskList)
+- `src/components/git/GitItemRow.tsx` — reusable git issue row (Dashboard, Week Ahead)
+- `src/components/ui/TaskItem.tsx` — shared task row with priority badge (Dashboard, Week Ahead)
 
 ### Wiki — meeting page structure
 
