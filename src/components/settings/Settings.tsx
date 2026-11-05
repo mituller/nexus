@@ -213,10 +213,10 @@ export function Settings() {
           <>
             <p className="text-xs text-gray-500 dark:text-gray-500 -mt-1 mb-3">
               Uses your existing AWS profile. Run{" "}
-              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">aws sso login --profile {local.bedrockProfile || "freshservice-bedrock"}</code>{" "}
+              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">aws sso login --profile {local.bedrockProfile || "default"}</code>{" "}
               before using AI features if your session has expired.
             </p>
-            <Field label="AWS Profile" type="text" placeholder="freshservice-bedrock" {...field("bedrockProfile")} />
+            <Field label="AWS Profile" type="text" placeholder="default" {...field("bedrockProfile")} />
             <Field label="AWS Region" type="text" placeholder="us-east-1" {...field("bedrockRegion")} />
             <Field label="Model ID" type="text" placeholder="us.anthropic.claude-sonnet-4-6" {...field("bedrockModelId")} />
           </>

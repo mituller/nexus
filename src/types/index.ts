@@ -184,7 +184,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitlabDefaultProjectId: "",
   githubToken: "",
   aiProvider: "bedrock",
-  bedrockProfile: "freshservice-bedrock",
+  bedrockProfile: "default",
   bedrockRegion: "us-east-1",
   bedrockModelId: "us.anthropic.claude-sonnet-4-6",
   openRouterApiKey: "",
