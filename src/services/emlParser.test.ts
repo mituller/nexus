@@ -41,6 +41,13 @@ describe("parseEml headers", () => {
     expect(parseEml(eml("Subject: =?UTF-8?Q?Caf=C3=A9_time?=", "", "x")).subject).toBe("Café time");
   });
 
+  it("decodes encoded words in their declared charset", () => {
+    const latin1 = Buffer.from("Café", "latin1").toString("base64");
+    expect(parseEml(eml(`Subject: =?ISO-8859-1?B?${latin1}?=`, "", "x")).subject).toBe("Café");
+    expect(parseEml(eml("Subject: =?ISO-8859-1?Q?Caf=E9_time?=", "", "x")).subject).toBe("Café time");
+    expect(parseEml(eml("Subject: =?windows-1252?Q?=93quoted=94?=", "", "x")).subject).toBe("“quoted”");
+  });
+
   it("handles a message with no body", () => {
     const parsed = parseEml("Subject: Only headers");
     expect(parsed.subject).toBe("Only headers");
@@ -68,6 +75,26 @@ describe("parseEml bodies", () => {
       "two =3D three",
     ));
     expect(parsed.body).toBe("one two = three");
+  });
+
+  it("honours a non-UTF-8 charset in a base64 body", () => {
+    const parsed = parseEml(eml(
+      'Content-Type: text/plain; charset="iso-8859-1"',
+      "Content-Transfer-Encoding: base64",
+      "",
+      Buffer.from("Café", "latin1").toString("base64"),
+    ));
+    expect(parsed.body).toBe("Café");
+  });
+
+  it("keeps text that is not valid base64", () => {
+    const parsed = parseEml(eml(
+      "Content-Type: text/plain",
+      "Content-Transfer-Encoding: base64",
+      "",
+      "not*base64",
+    ));
+    expect(parsed.body).toBe("not*base64");
   });
 
   const quotedPrintable = (contentType: string, ...body: string[]) => parseEml(eml(

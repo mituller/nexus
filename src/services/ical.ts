@@ -55,6 +55,7 @@ function parseICalText(
         const iter = event.iterator();
         let next: ICAL.Time | null;
         let safetyCount = 0;
+        const duration = event.endDate.toJSDate().getTime() - event.startDate.toJSDate().getTime();
 
         // Occurrences are counted from DTSTART, so the cap has to allow for
         // series that began years before the range.
@@ -62,7 +63,8 @@ function parseICalText(
           safetyCount++;
           const occurrence = next.toJSDate().getTime();
           if (occurrence > end) break;
-          if (occurrence >= start) {
+          // Keep one that began before the range and is still running, as below
+          if (occurrence >= start || occurrence + duration > start) {
             const detail = event.getOccurrenceDetails(next);
             // A rescheduled occurrence is emitted from its own VEVENT below,
             // which also covers one moved into or out of the range.

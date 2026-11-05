@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetch } from "@tauri-apps/plugin-http";
 import { format } from "date-fns";
 import { ICalFeed } from "../types";
@@ -190,6 +190,24 @@ describe("recurring events", () => {
     ]);
   });
 
+  it("includes an occurrence that began before the range and is still running", async () => {
+    const events = await parse(vevent(
+      "DTSTART;VALUE=DATE:20260529",
+      "DTEND;VALUE=DATE:20260602",
+      "RRULE:FREQ=WEEKLY;COUNT=2",
+    ));
+    expect(events.map((e) => format(new Date(e.start), "yyyy-MM-dd"))).toEqual(["2026-05-29", "2026-06-05"]);
+  });
+
+  it("excludes an occurrence that ended exactly as the range began", async () => {
+    const events = await parse(vevent(
+      "DTSTART;VALUE=DATE:20260531",
+      "DTEND;VALUE=DATE:20260601",
+      "RRULE:FREQ=WEEKLY;COUNT=2",
+    ));
+    expect(events.map((e) => format(new Date(e.start), "yyyy-MM-dd"))).toEqual(["2026-06-07"]);
+  });
+
   it("gives each occurrence a unique id and its own end time", async () => {
     const events = await parse(vevent(
       "DTSTART:20260601T130000Z",
@@ -305,5 +323,44 @@ describe("recurring events", () => {
       vevent("RECURRENCE-ID:20260602T130000Z", "DTSTART:20260602T180000Z", "DTEND:20260602T190000Z"),
     );
     expect(events.map((e) => e.start)).toEqual(["2026-06-02T18:00:00.000Z"]);
+  });
+});
+
+describe("in a timezone east of UTC", () => {
+  const originalTz = process.env.TZ;
+
+  beforeEach(() => {
+    process.env.TZ = "Asia/Tokyo";
+  });
+
+  afterEach(() => {
+    process.env.TZ = originalTz;
+  });
+
+  const localDates = (events: { start: string }[]) => events.map((e) => format(new Date(e.start), "yyyy-MM-dd"));
+
+  it("runs in Tokyo time", () => {
+    expect(new Date(2026, 5, 1).getTimezoneOffset()).toBe(-540);
+  });
+
+  it("matches all-day events to the range by local date", async () => {
+    respondWith(calendar(
+      vevent("DTSTART;VALUE=DATE:20260531", "DTEND;VALUE=DATE:20260601"),
+      vevent("DTSTART;VALUE=DATE:20260601", "DTEND;VALUE=DATE:20260602"),
+      vevent("DTSTART;VALUE=DATE:20260602", "DTEND;VALUE=DATE:20260603"),
+    ));
+    const events = await fetchAndParseICalFeed(feed, new Date(2026, 5, 1), new Date(2026, 5, 1, 23, 59, 59));
+    expect(localDates(events)).toEqual(["2026-06-01"]);
+    expect(isAllDay(events[0])).toBe(true);
+  });
+
+  it("matches recurring all-day events to the range by local date", async () => {
+    respondWith(calendar(vevent(
+      "DTSTART;VALUE=DATE:20260531",
+      "DTEND;VALUE=DATE:20260601",
+      "RRULE:FREQ=DAILY;COUNT=3",
+    )));
+    const events = await fetchAndParseICalFeed(feed, new Date(2026, 5, 1), new Date(2026, 5, 1, 23, 59, 59));
+    expect(localDates(events)).toEqual(["2026-06-01"]);
   });
 });

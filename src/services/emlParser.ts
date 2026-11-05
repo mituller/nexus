@@ -9,22 +9,21 @@ export interface ParsedEmail {
 
 // ─── Encoding helpers ────────────────────────────────────────────────────────
 
-function decodeBase64Utf8(b64: string): string {
-  try {
-    const clean = b64.replace(/\s/g, "");
-    const bytes = Uint8Array.from(atob(clean), (c) => c.charCodeAt(0));
-    return new TextDecoder("utf-8").decode(bytes);
-  } catch {
-    try { return atob(b64.replace(/\s/g, "")); } catch { return b64; }
-  }
-}
-
 function decodeBytes(bytes: Uint8Array, charset: string): string {
   try {
     return new TextDecoder(charset).decode(bytes);
   } catch {
     // Unknown charset label
     return new TextDecoder("utf-8").decode(bytes);
+  }
+}
+
+function decodeBase64(b64: string, charset: string): string {
+  try {
+    const clean = b64.replace(/\s/g, "");
+    return decodeBytes(Uint8Array.from(atob(clean), (c) => c.charCodeAt(0)), charset);
+  } catch {
+    return b64;
   }
 }
 
@@ -38,13 +37,10 @@ function decodeQuotedPrintable(text: string, charset: string): string {
 
 // Decode RFC 2047 encoded words =?UTF-8?B?...?= or =?UTF-8?Q?...?=
 function decodeEncodedWord(str: string): string {
-  return str.replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_f: string, _cs: string, enc: string, text: string) => {
-    try {
-      return enc.toUpperCase() === "B"
-        ? decodeBase64Utf8(text)
-        : decodeURIComponent(text.replace(/_/g, " ").replace(/=([0-9A-Fa-f]{2})/g, (_m: string, h: string) => "%" + h));
-    } catch { return text; }
-  });
+  return str.replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_f: string, charset: string, enc: string, text: string) =>
+    enc.toUpperCase() === "B"
+      ? decodeBase64(text, charset)
+      : decodeQuotedPrintable(text.replace(/_/g, " "), charset));
 }
 
 function stripHtml(html: string): string {
@@ -92,11 +88,9 @@ function parseMimePart(raw: string): { headers: Record<string, string>; body: st
 
 function decodePart(headers: Record<string, string>, body: string): string {
   const cte = (headers["content-transfer-encoding"] ?? "").toLowerCase().trim();
-  if (cte === "base64") return decodeBase64Utf8(body);
-  if (cte === "quoted-printable") {
-    const charset = headers["content-type"]?.match(/charset=["']?([^"';\s]+)/i)?.[1] ?? "utf-8";
-    return decodeQuotedPrintable(body, charset);
-  }
+  const charset = headers["content-type"]?.match(/charset=["']?([^"';\s]+)/i)?.[1] ?? "utf-8";
+  if (cte === "base64") return decodeBase64(body, charset);
+  if (cte === "quoted-printable") return decodeQuotedPrintable(body, charset);
   return body;
 }
 
