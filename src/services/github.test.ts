@@ -80,7 +80,7 @@ describe("getAssignedIssues", () => {
       projectPath: "acme/app",
       labels: ["priority: high", "bug"],
       milestone: "v1",
-      dueDate: "2026-07-01T07:00:00Z",
+      dueDate: "2026-07-01",
       priority: "high",
       issueType: "issue",
       createdAt: "c",

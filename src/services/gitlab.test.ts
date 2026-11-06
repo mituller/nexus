@@ -40,9 +40,7 @@ describe("getGitLabUser", () => {
     expect(vi.mocked(fetch).mock.lastCall![1]!.headers).toMatchObject({ "PRIVATE-TOKEN": "tok" });
   });
 
-  // git.ts passes user.id to getAssignedIssues for its assignee_id filter, but
-  // the id is never copied here, so that filter is never used.
-  it.fails("KNOWN BUG: returns the user's id", async () => {
+  it("returns the user's id", async () => {
     respondWith({ id: 9, username: "ann", name: "Ann", avatar_url: "a.png" });
     expect((await getGitLabUser("https://gitlab.com", "tok")).id).toBe(9);
   });
@@ -75,10 +73,22 @@ describe("getAssignedIssues URL", () => {
     expect(requestedUrl()).toContain("/api/v4/groups/acme/issues?");
   });
 
-  it("filters by assignee id when it has one", async () => {
-    await getAssignedIssues("https://gitlab.com", "tok", undefined, 9);
-    expect(requestedUrl()).toContain("assignee_id=9");
+  it("filters a group's issues by assignee id when it has one", async () => {
+    await getAssignedIssues("https://gitlab.com/acme", "tok", undefined, 9);
+    expect(requestedUrl()).toContain("/groups/acme/issues?assignee_id=9&");
     expect(requestedUrl()).not.toContain("assigned_to_me");
+  });
+
+  // /issues defaults to issues the user created, so assignee_id alone would hide
+  // issues someone else opened, and scope=all can be rejected on GitLab.com.
+  it.each([
+    ["https://gitlab.com", undefined],
+    ["https://gitlab.com/acme", "1,2"],
+  ])("keeps the assigned scope on /issues even with an id (%s, filters %j)", async (url, filters) => {
+    await getAssignedIssues(url, "tok", filters, 9);
+    expect(requestedUrl()).toContain("/api/v4/issues?");
+    expect(requestedUrl()).toContain("scope=assigned_to_me");
+    expect(requestedUrl()).not.toContain("assignee_id");
   });
 
   it("otherwise asks for the token owner's issues", async () => {
@@ -132,8 +142,7 @@ describe("getAssignedIssues mapping", () => {
     expect(await iterationFor({ title: null, iid: 8 })).toBe("Iteration 8");
   });
 
-  // new Date("2026-06-01") is midnight UTC, which is May 31 west of Greenwich.
-  it.fails("KNOWN BUG: an untitled iteration's date range keeps its dates", async () => {
+  it("an untitled iteration's date range keeps its dates", async () => {
     const label = await iterationFor({ title: null, start_date: "2026-06-01", due_date: "2026-06-14" });
     expect(label).toBe("Jun 1 – Jun 14");
   });

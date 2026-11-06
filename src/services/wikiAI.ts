@@ -17,12 +17,20 @@ function parseJson<T>(raw: string): T | null {
 
 // ─── Ingest ─────────────────────────────────────────────────────────────────
 
-// Extract unique named speakers from transcript-style content (**Name** lines)
+// Extract unique named speakers from transcript-style content. Handles **Name**
+// on its own line and imported VTT's "**Name** (5:30): text". A recording's
+// "**Name:** text" looks like any bold label, such as **Date:** in a meeting
+// note, so it only counts under the "## Transcript" heading recordings start with.
 function extractSpeakers(content: string): string[] {
+  const patterns = [/^\*{1,2}([^*\n]+)\*{1,2}\s*$/gm, /^\*\*([^*\n]+)\*\* \([^)\n]*\):/gm];
+  if (/^## Transcript\s*$/m.test(content)) patterns.push(/^\*\*([^*\n]+):\*\* /gm);
+
   const seen = new Set<string>();
-  for (const m of content.matchAll(/^\*{1,2}([^*\n]+)\*{1,2}\s*$/gm)) {
-    const name = m[1].trim();
-    if (name && !/^Speaker\s*\d*$/i.test(name)) seen.add(name);
+  for (const pattern of patterns) {
+    for (const m of content.matchAll(pattern)) {
+      const name = m[1].trim();
+      if (name && !/^(Unknown )?Speaker\s*\d*$/i.test(name)) seen.add(name);
+    }
   }
   return [...seen];
 }

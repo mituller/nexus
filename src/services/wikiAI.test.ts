@@ -72,16 +72,19 @@ describe("ingestNoteToWiki", () => {
       expect(lastPrompt()).not.toContain("PARTICIPANTS:");
     });
 
-    // Neither format Nexus writes puts the name alone on a line, so
-    // extractSpeakers finds nobody in its own transcripts.
-    it.fails("KNOWN BUG: finds speakers in imported VTT transcripts", async () => {
+    it("finds speakers in imported VTT transcripts", async () => {
       await ingestNoteToWiki(cfg, "T", "**Ann** (5:30): Hello\n\n**Bob** (5:40): Hi", []);
       expect(lastPrompt()).toContain("PARTICIPANTS: Ann, Bob\n");
     });
 
-    it.fails("KNOWN BUG: finds speakers in recorded transcripts", async () => {
-      await ingestNoteToWiki(cfg, "T", "**Ann:** Hello\n\n**Bob:** Hi", []);
+    it("finds speakers in recorded transcripts", async () => {
+      await ingestNoteToWiki(cfg, "T", "## Transcript\n\n**Ann:** Hello\n\n**Speaker 2:** Hi\n\n**Unknown speaker:** Hey\n\n**Bob:** Bye", []);
       expect(lastPrompt()).toContain("PARTICIPANTS: Ann, Bob\n");
+    });
+
+    it("doesn't mistake bold labels in other notes for speakers", async () => {
+      await ingestNoteToWiki(cfg, "T", "**Date:** Monday\n**Organizer:** You\n\n**Note**: call back\n\n## Notes\n**Decision:** Ship it", []);
+      expect(lastPrompt()).not.toContain("PARTICIPANTS:");
     });
   });
 });

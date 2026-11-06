@@ -142,10 +142,9 @@ describe("opening a result", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  // The key handler is on the panel, so clicking a non-focusable part of it
-  // moves focus to the page and the keys stop reaching the handler.
-  it.fails("KNOWN BUG: Escape still closes after clicking inside the panel", async () => {
+  it("keeps the keyboard working after clicking inside the panel", async () => {
     await userEvent.click(screen.getByText("Search notes, tasks, wiki, and git items."));
+    expect(document.activeElement).toBe(screen.getByPlaceholderText("Search notes, tasks, wiki, git…"));
     await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
   });

@@ -1,4 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { format, parseISO } from "date-fns";
 import { GitIssue, GitMR, GitUser } from "../types/git";
 import { extractPriorityFromLabels } from "../utils/priority";
 
@@ -33,6 +34,7 @@ export async function getGitLabUser(baseUrl: string, token: string): Promise<Git
   const { origin } = parseGitLabUrl(baseUrl);
   const raw = await glGet<Record<string, unknown>>(origin, token, "/user");
   return {
+    id: raw.id as number,
     username: raw.username as string,
     name: raw.name as string,
     avatarUrl: raw.avatar_url as string,
@@ -46,26 +48,19 @@ export async function getAssignedIssues(
   userId?: number
 ): Promise<GitIssue[]> {
   const { origin, group } = parseGitLabUrl(baseUrl);
-  // Use assignee_id when we have the user ID — more reliable than assigned_to_me on group endpoints
-  const assigneeFilter = userId ? `assignee_id=${userId}` : "assigned_to_me=true&scope=assigned_to_me";
-  const base = `?${assigneeFilter}&state=opened&per_page=30&order_by=updated_at`;
+  const params = "state=opened&per_page=30&order_by=updated_at";
+  // /issues defaults to issues you created and can reject scope=all, so it has to
+  // use this scope. assignee_id is only safe on group endpoints, where it's more reliable.
+  const allIssues = `/issues?assigned_to_me=true&scope=assigned_to_me&${params}`;
+  const groupIssues = group
+    ? `/groups/${encodeURIComponent(group)}/issues?${userId ? `assignee_id=${userId}` : "assigned_to_me=true&scope=assigned_to_me"}&${params}`
+    : allIssues;
 
-  let path: string;
-
-  if (projectFilters) {
-    // Explicit project ID filter wins over group
-    const ids = projectFilters.split(",").map((s) => s.trim()).filter(Boolean);
-    if (ids.length > 0) {
-      path = `/issues${base}&project_ids[]=${ids.join("&project_ids[]=")}`;
-    } else {
-      path = group ? `/groups/${encodeURIComponent(group)}/issues${base}` : `/issues${base}`;
-    }
-  } else if (group) {
-    // Group path in URL → scope to that group
-    path = `/groups/${encodeURIComponent(group)}/issues${base}`;
-  } else {
-    path = `/issues${base}`;
-  }
+  // Explicit project ID filter wins over group
+  const ids = (projectFilters ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const path = ids.length > 0
+    ? `${allIssues}&project_ids[]=${ids.join("&project_ids[]=")}`
+    : groupIssues;
 
   const raw = await glGet<Record<string, unknown>[]>(origin, token, path);
 
@@ -112,8 +107,7 @@ function formatIteration(iter: IterationRaw | null): string | undefined {
   if (iter.title) return iter.title;
   // title is null in some GitLab API responses — fall back to date range
   if (iter.start_date && iter.due_date) {
-    const fmt = (d: string) =>
-      new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const fmt = (d: string) => format(parseISO(d), "MMM d");
     return `${fmt(iter.start_date)} – ${fmt(iter.due_date)}`;
   }
   if (iter.sequence) return `Sprint ${iter.sequence}`;

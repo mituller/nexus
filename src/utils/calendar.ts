@@ -1,4 +1,4 @@
-import { format, parseISO, isBefore } from "date-fns";
+import { format, parseISO, isBefore, endOfDay } from "date-fns";
 import { CalendarEvent } from "../types";
 
 /**
@@ -12,9 +12,10 @@ export function isAllDay(event: CalendarEvent): boolean {
   return atMidnight(s) && atMidnight(e) && e.getTime() > s.getTime();
 }
 
-/** True if an ISO date string is in the past */
+/** True if a due date has passed. A date with no time stays due until that day ends. */
 export function isOverdue(isoDate: string): boolean {
-  return isBefore(parseISO(isoDate), new Date());
+  const due = parseISO(isoDate);
+  return isBefore(isoDate.length === 10 ? endOfDay(due) : due, new Date());
 }
 
 /** Format an ISO date string as "MMM d" (e.g. "Jun 3") */

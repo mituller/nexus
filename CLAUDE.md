@@ -168,4 +168,6 @@ In `WikiPageList.tsx`, meetings with `" – Month D, YYYY"` suffix are grouped u
 
 **Event dates:** use `format(new Date(e.start), "yyyy-MM-dd")` for local-timezone date comparisons.
 
+**Overdue checks:** use `isOverdue(dueDate)` from `src/utils/calendar.ts`. A date-only due date stays due until that day ends, which comparing `parseISO(dueDate)` to now gets wrong.
+
 **All-day events:** use `isAllDay(event)` from `src/utils/calendar.ts` — checks that start and end are both at local midnight.

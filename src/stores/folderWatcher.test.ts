@@ -115,23 +115,31 @@ describe("importing files", () => {
     expect(createNote).toHaveBeenCalledWith(expect.objectContaining({ sourceType: "transcript" }));
   });
 
-  // The sourceType check only tests for "eml", so a real transcript counts as
-  // "manual" here, unlike TranscriptImport, and extraction is told it's a note.
-  it.fails("KNOWN BUG: records VTT files as transcript notes", async () => {
+  it("records VTT files as transcript notes", async () => {
     vi.mocked(scanFolder).mockResolvedValue(["a.vtt"]);
     vi.mocked(processFile).mockResolvedValue(imported("a.vtt", { format: "vtt" }));
     await scanNow();
     expect(createNote).toHaveBeenCalledWith(expect.objectContaining({ sourceType: "transcript" }));
   });
 
-  // The note is saved before the move, and the file stays in the folder if the
-  // move fails, so every 30-second scan imports it again.
-  it.fails("KNOWN BUG: doesn't create another note each scan when a file can't be moved", async () => {
+  it("creates no note for a file it can't move, however many scans run", async () => {
     vi.mocked(scanFolder).mockResolvedValue(["a.txt"]);
     vi.mocked(moveToProcessed).mockRejectedValue(new Error("read-only"));
+    expect(await scanNow()).toBe(0);
     await scanNow();
-    await scanNow();
+    expect(createNote).not.toHaveBeenCalled();
+    expect(state().newNoteCount).toBe(0);
+    expect(state().lastError).toBe("Could not move a.txt to _processed: read-only");
+  });
+
+  it("still imports the other files when one can't be moved", async () => {
+    vi.mocked(scanFolder).mockResolvedValue(["stuck.txt", "good.txt"]);
+    vi.mocked(moveToProcessed).mockImplementation(async (_folder, name) => {
+      if (name === "stuck.txt") throw new Error("read-only");
+    });
+    expect(await scanNow()).toBe(1);
     expect(createNote).toHaveBeenCalledTimes(1);
+    expect(createNote).toHaveBeenCalledWith(expect.objectContaining({ title: "good.txt" }));
   });
 });
 
@@ -156,8 +164,7 @@ describe("errors", () => {
 });
 
 describe("last scanned time", () => {
-  // Settings shows this time, but an empty folder returns before it's set.
-  it.fails("KNOWN BUG: updates when the folder is empty", async () => {
+  it("updates when the folder is empty", async () => {
     await scanNow();
     expect(state().lastScanned).toBeInstanceOf(Date);
   });

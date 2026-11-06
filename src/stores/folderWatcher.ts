@@ -58,7 +58,7 @@ export const useFolderWatcherStore = create<FolderWatcherStore>((set, get) => ({
 
     try {
       const files = await scanFolder(folderPath);
-      set({ lastError: null });
+      set({ lastError: null, lastScanned: new Date() });
       if (files.length === 0) return 0;
 
       const { create: createNote } = useNotesStore.getState();
@@ -69,16 +69,23 @@ export const useFolderWatcherStore = create<FolderWatcherStore>((set, get) => ({
         const result = await processFile(folderPath, fileName);
         if (!result) continue;
 
+        // Move to _processed first. A file that stays in the folder is imported
+        // again on every scan, so it mustn't get a note until it has moved.
+        try {
+          await moveToProcessed(folderPath, fileName);
+        } catch (e) {
+          console.error(`Could not move ${fileName}:`, e);
+          set({ lastError: `Could not move ${fileName} to _processed: ${e instanceof Error ? e.message : String(e)}` });
+          continue;
+        }
+
         // Create note
         const note = await createNote({
           title: result.title,
           content: result.content,
           tags: result.tags,
-          sourceType: result.format === "eml" ? "transcript" : "manual",
+          sourceType: result.format === "eml" || result.format === "vtt" ? "transcript" : "manual",
         });
-
-        // Move to _processed
-        await moveToProcessed(folderPath, fileName);
 
         set((state) => ({
           newNoteCount: state.newNoteCount + 1,
@@ -105,7 +112,6 @@ export const useFolderWatcherStore = create<FolderWatcherStore>((set, get) => ({
         }
       }
 
-      set({ lastScanned: new Date() });
       return imported;
     } catch (e) {
       console.error("Folder scan failed:", e);

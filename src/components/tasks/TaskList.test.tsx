@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { format } from "date-fns";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTask, deleteTask, updateTask } from "../../services/db";
@@ -108,6 +109,15 @@ describe("personal tasks", () => {
     render(<TaskList />);
     expect(within(closest("Late")).getByText(/Due Jan 5/).textContent).toContain("overdue");
     expect(within(closest("Undated")).getByText("No due date")).toBeTruthy();
+  });
+
+  it("doesn't flag a task or issue on the day it's due", () => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    useTaskStore.setState({ tasks: [task("Due today", { dueDate: today })] });
+    connected({ issues: [issue("Issue due today", { dueDate: today })] });
+    render(<TaskList />);
+    expect(within(closest("Due today")).getByText(/^Due \w+ \d/).textContent).not.toContain("overdue");
+    expect(within(closest("Issue due today")).getByText(/^Due \w+ \d/).textContent).not.toContain("overdue");
   });
 
   it("opens the new task form and edits an existing task", async () => {

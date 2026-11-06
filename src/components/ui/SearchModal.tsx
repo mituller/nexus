@@ -135,7 +135,7 @@ export function SearchModal({ onClose, onNavigate }: SearchModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-start justify-center pt-24 z-50 px-4" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-xl overflow-hidden" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-xl overflow-hidden" onClick={(e) => { e.stopPropagation(); inputRef.current?.focus(); }} onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <Search size={16} className="text-gray-500 dark:text-gray-400 shrink-0" />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)}

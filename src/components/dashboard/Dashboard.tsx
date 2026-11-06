@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { RefreshCw, Calendar, CheckSquare } from "lucide-react";
-import { format, addDays, isBefore, parseISO } from "date-fns";
+import { format, addDays } from "date-fns";
+import { isOverdue } from "../../utils/calendar";
 import { useCalendarStore } from "../../stores/calendar";
 import { useSettingsStore } from "../../stores/settings";
 import { useTaskStore } from "../../stores/tasks";
@@ -50,10 +51,10 @@ export function Dashboard({ onAddMeetingNote, onNavigateTasks }: { onAddMeetingN
   const openTasks = useMemo(() => sortTasks(tasks.filter((t) => t.status !== "done")), [tasks]);
 
   // #8 — count overdue git items for stats bar
-  const overdueExternal = useMemo(() => {
-    const cutoff = new Date();
-    return issues.filter((i) => i.dueDate && isBefore(parseISO(i.dueDate), cutoff)).length;
-  }, [issues]);
+  const overdueExternal = useMemo(
+    () => issues.filter((i) => i.dueDate && isOverdue(i.dueDate)).length,
+    [issues]
+  );
 
   // Drop alerts for tasks that have since been completed. Memoised so the array
   // identity is stable and HeadsUpSection can skip re-rendering.
