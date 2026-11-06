@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { open } from "@tauri-apps/plugin-shell";
 import { closeIssue, getAssignedIssues, getGitHubUser, getOpenPullRequests } from "../services/github";
+import { getAssignedIssues as getGitLabIssues, getGitLabUser, getOpenMergeRequests } from "../services/gitlab";
 import { GitIssue } from "../types/git";
 import { gitErrorMessage, useGitStore } from "./git";
 import { useSettingsStore } from "./settings";
@@ -7,6 +9,7 @@ import { useSettingsStore } from "./settings";
 vi.mock("../services/github");
 vi.mock("../services/gitlab");
 vi.mock("../services/store");
+vi.mock("@tauri-apps/plugin-shell", () => ({ open: vi.fn() }));
 
 function issue(id: string, provider: GitIssue["provider"] = "github"): GitIssue {
   return {
@@ -112,5 +115,51 @@ describe("gitErrorMessage", () => {
 
   it("names the provider and keeps the detail otherwise", () => {
     expect(gitErrorMessage("Error: network down", "gitlab")).toBe("GitLab error: Error: network down");
+  });
+});
+
+describe("fetch from GitLab", () => {
+  const user = { id: 9, username: "ann", name: "Ann", avatarUrl: "" };
+
+  beforeEach(() => {
+    useSettingsStore.setState({
+      settings: {
+        ...useSettingsStore.getInitialState().settings,
+        gitProvider: "gitlab", gitlabUrl: "https://gitlab.com/acme", gitlabToken: "gl-tok", gitlabProjectFilters: "1,2",
+      },
+    });
+    vi.mocked(getGitLabUser).mockResolvedValue(user);
+    vi.mocked(getGitLabIssues).mockResolvedValue([issue("a", "gitlab")]);
+    vi.mocked(getOpenMergeRequests).mockResolvedValue([]);
+  });
+
+  it("does nothing with no token", async () => {
+    useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, gitlabToken: "" } });
+    await useGitStore.getState().fetch();
+    expect(getGitLabUser).not.toHaveBeenCalled();
+    expect(useGitStore.getState().connected).toBe(false);
+  });
+
+  it("loads the items using the user's id and the project filters", async () => {
+    await useGitStore.getState().fetch();
+    expect(getGitLabUser).toHaveBeenCalledWith("https://gitlab.com/acme", "gl-tok");
+    expect(getGitLabIssues).toHaveBeenCalledWith("https://gitlab.com/acme", "gl-tok", "1,2", 9);
+    expect(getOpenMergeRequests).toHaveBeenCalledWith("https://gitlab.com/acme", "gl-tok", "1,2");
+    expect(useGitStore.getState()).toMatchObject({ provider: "gitlab", user, connected: true, loading: false, error: null });
+    expect(useGitStore.getState().issues).toHaveLength(1);
+  });
+
+  it("records the error when the user can't be loaded", async () => {
+    vi.mocked(getGitLabUser).mockRejectedValue(new Error("GitLab 401: nope"));
+    await useGitStore.getState().fetch();
+    expect(useGitStore.getState()).toMatchObject({ provider: "gitlab", connected: false, loading: false });
+    expect(useGitStore.getState().error).toContain("GitLab 401");
+  });
+});
+
+describe("openIssue", () => {
+  it("opens the URL in the browser", async () => {
+    useGitStore.getState().openIssue("https://x/1");
+    await vi.waitFor(() => expect(open).toHaveBeenCalledWith("https://x/1"));
   });
 });

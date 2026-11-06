@@ -18,6 +18,12 @@ npm run build
 # Run the frontend tests once (or `npm run test:watch`)
 npm test
 
+# Same, with a coverage report (HTML in coverage/)
+npm run test:coverage
+
+# Run the Rust tests
+cd src-tauri && cargo test
+
 # Compile Rust backend only
 cd src-tauri && cargo build
 
@@ -111,13 +117,14 @@ Calendars are iCal URL feeds parsed in `src/services/ical.ts` using `ical.js`. E
 
 ### Tests and CI
 
-Tests use Vitest and sit next to the code as `src/**/*.test.ts`. They cover utilities, services, and stores; React components and the Rust backend have none yet.
+Frontend tests use Vitest and sit next to the code as `src/**/*.test.{ts,tsx}`. They cover utilities, services, stores, and the Tasks, search, quick capture, and Dashboard git components. Rust tests are `#[cfg(test)]` modules in `audio.rs` and `transcribe.rs`, for the code that doesn't need a microphone or AWS.
 
 - `vitest.config.ts` sets `TZ=America/New_York` so UTC-versus-local mistakes fail on any machine, and `mockReset: true`, so set mock return values in each test or in `beforeEach`.
-- Mock the boundary below the code under test: `@tauri-apps/plugin-sql` and `@tauri-apps/plugin-http` for services, `../services/*` for stores.
+- Mock the boundary below the code under test: `@tauri-apps/plugin-sql` and `@tauri-apps/plugin-http` for services, `../services/*` for stores and components.
+- Component tests start with `// @vitest-environment jsdom`, use React Testing Library, and call `cleanup` in `afterEach`.
 - Mark a confirmed bug you aren't fixing yet with `it.fails("KNOWN BUG: ...")`. It starts failing once the bug is fixed, which is the cue to change it to `it`.
 
-GitHub Actions runs `npm run build` and `npm test` (`.github/workflows/github-ci.yml`) and CodeQL for TypeScript and Rust (`.github/workflows/codeql.yml`). The build is what type-checks: Vitest doesn't compile components, so a broken `.tsx` file can still pass `npm test`.
+GitHub Actions runs `npm run build`, `npm run test:coverage` (with totals in the job summary, and no minimum enforced), and `cargo test` on macOS (`.github/workflows/github-ci.yml`), and CodeQL for TypeScript and Rust (`.github/workflows/codeql.yml`). The build is what type-checks: Vitest doesn't compile components, so a broken `.tsx` file can still pass `npm test`.
 
 ### Git — GitLab or GitHub
 

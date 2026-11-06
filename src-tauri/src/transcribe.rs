@@ -269,3 +269,90 @@ fn segments_from_items(items: &[Item]) -> Vec<Segment> {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn word(content: &str, speaker: &str, start: f64, end: f64) -> Item {
+        Item::builder()
+            .content(content)
+            .r#type(ItemType::Pronunciation)
+            .speaker(speaker)
+            .start_time(start)
+            .end_time(end)
+            .build()
+    }
+
+    fn punctuation(content: &str, speaker: &str) -> Item {
+        Item::builder()
+            .content(content)
+            .r#type(ItemType::Punctuation)
+            .speaker(speaker)
+            .build()
+    }
+
+    #[test]
+    fn a_speakers_words_join_into_one_segment() {
+        let segments = segments_from_items(&[
+            word("Hello", "spk_0", 1.0, 1.5),
+            word("there", "spk_0", 1.5, 2.25),
+        ]);
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].speaker, "spk_0");
+        assert_eq!(segments[0].text, "Hello there");
+        assert_eq!(segments[0].start_ms, 1000);
+        assert_eq!(segments[0].end_ms, 2250);
+    }
+
+    #[test]
+    fn punctuation_attaches_without_a_space() {
+        let segments = segments_from_items(&[
+            word("Hello", "spk_0", 0.0, 1.0),
+            punctuation(",", "spk_0"),
+            word("there", "spk_0", 1.0, 2.0),
+            punctuation(".", "spk_0"),
+        ]);
+        assert_eq!(segments[0].text, "Hello, there.");
+    }
+
+    #[test]
+    fn a_new_speaker_starts_a_new_segment() {
+        let segments = segments_from_items(&[
+            word("Hi", "spk_0", 0.0, 1.0),
+            word("Hello", "spk_1", 1.0, 2.0),
+            word("Bye", "spk_0", 2.0, 3.0),
+        ]);
+        let turns: Vec<_> = segments.iter().map(|s| (s.speaker.as_str(), s.text.as_str())).collect();
+        assert_eq!(turns, [("spk_0", "Hi"), ("spk_1", "Hello"), ("spk_0", "Bye")]);
+    }
+
+    #[test]
+    fn a_word_with_no_speaker_is_labelled_unknown() {
+        let item = Item::builder().content("Hi").r#type(ItemType::Pronunciation).build();
+        assert_eq!(segments_from_items(&[item])[0].speaker, "unknown");
+    }
+
+    #[test]
+    fn empty_items_are_skipped() {
+        let no_content = Item::builder().r#type(ItemType::Pronunciation).speaker("spk_0").build();
+        assert!(segments_from_items(&[no_content, word("", "spk_0", 0.0, 1.0)]).is_empty());
+    }
+
+    #[test]
+    fn updates_serialize_with_the_names_the_webview_expects() {
+        let update = TranscriptUpdate {
+            kind: "final",
+            segments: vec![Segment { speaker: "spk_0".into(), text: "Hi".into(), start_ms: 1, end_ms: 2 }],
+            message: None,
+        };
+        assert_eq!(
+            serde_json::to_value(update).unwrap(),
+            serde_json::json!({
+                "kind": "final",
+                "segments": [{ "speaker": "spk_0", "text": "Hi", "startMs": 1, "endMs": 2 }],
+                "message": null,
+            })
+        );
+    }
+}

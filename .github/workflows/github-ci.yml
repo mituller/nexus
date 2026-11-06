@@ -19,4 +19,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      - run: npm run test:coverage
+      - run: node .github/scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+
+  rust-test:
+    # The app is macOS only, and its audio and webview dependencies build here without extra packages.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      # tauri::generate_context! needs frontendDist to exist. These tests don't use its contents.
+      - run: mkdir -p dist
+      - run: cargo test --locked
+        working-directory: src-tauri

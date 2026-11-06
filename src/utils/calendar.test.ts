@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CalendarEvent } from "../types";
-import { formatShortDate, isAllDay, isOverdue } from "./calendar";
+import { open } from "@tauri-apps/plugin-shell";
+import { formatShortDate, isAllDay, isOverdue, openExternalUrl } from "./calendar";
+
+vi.mock("@tauri-apps/plugin-shell", () => ({ open: vi.fn() }));
 
 function event(start: Date, end: Date): CalendarEvent {
   return {
@@ -75,6 +78,14 @@ describe("isOverdue", () => {
     expect(isOverdue("2026-06-15T11:59:00Z")).toBe(true);
     expect(isOverdue("2026-06-15T12:01:00Z")).toBe(false);
   });
+
+  // A date with no time parses as local midnight, so it's "past" all day. See
+  // also generateDailyBriefing in claude.test.ts.
+  it.fails("KNOWN BUG: a date-only value isn't overdue on that day", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 5, 15, 12));
+    expect(isOverdue("2026-06-15")).toBe(false);
+  });
 });
 
 describe("formatShortDate", () => {
@@ -84,5 +95,12 @@ describe("formatShortDate", () => {
 
   it("uses the local day for a UTC timestamp near midnight", () => {
     expect(formatShortDate("2026-06-03T01:00:00Z")).toBe("Jun 2");
+  });
+});
+
+describe("openExternalUrl", () => {
+  it("opens the URL in the system browser", async () => {
+    await openExternalUrl("https://x/1");
+    expect(open).toHaveBeenCalledWith("https://x/1");
   });
 });
