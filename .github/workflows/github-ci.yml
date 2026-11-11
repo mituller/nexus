@@ -23,7 +23,8 @@ jobs:
       - run: node .github/scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
 
   rust-test:
-    # The app is macOS only, and its audio and webview dependencies build here without extra packages.
+    # macOS: the audio and webview dependencies build here without extra packages.
+    # Windows is covered by windows-build.yml.
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
